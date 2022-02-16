@@ -70,9 +70,9 @@ jobs:
         id: archive-output
         run: |
           if [[ ${{ matrix.target }} == windows ]]; then
-            echo "::set-output name=${{ matrix.target }}::${{ github.ref-name }}-${{ matrix.target }}".zip
+            echo "::set-output name=${{ matrix.target }}::${{ github.ref_name }}-${{ matrix.target }}".zip
           else
-            echo "::set-output name=${{ matrix.target }}::${{ github.ref-name }}-${{ matrix.target }}".tar.gz
+            echo "::set-output name=${{ matrix.target }}::${{ github.ref_name }}-${{ matrix.target }}".tar.gz
     outputs:
       linux-archive: ${{ steps.archive-output.outputs.x86_64-unknown-linux-gnu }}
       windows-archive: ${{ steps.archive-output.outputs.x86_64-pc-windows-msvc }}
@@ -91,7 +91,7 @@ jobs:
           ref: release-meta
       - name: Fetch mukti assets
         run: |
-          URL_PREFIX="https://github.com/sunshowers-code/mukti/releases/${{ github.ref-name }}/download/"
+          URL_PREFIX="https://github.com/sunshowers-code/mukti/releases/${{ github.ref_name }}/download/"
           curl -LsSf "$URL_PREFIX/${{ needs.upload-mukti-bin-assets.outputs.linux-archive }}" | tar xzf - -C ~
           ~/mukti-bin add-release --version ${{ needs.create-mukti-bin-release.outputs.version }} --url-prefix "$URL_PREFIX" \
             --archive x86_64-unknown-linux-gnu=${{ needs.upload-mukti-bin-assets.outputs.linux-archive }}
