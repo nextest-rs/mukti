@@ -8,7 +8,7 @@ on:
 
 jobs:
   create-mukti-bin-release:
-    if: github.repository_owner == 'sunshowers-code' && startsWith(github.ref_name, 'mukti-bin-')
+    if: github.repository_owner == 'sunshowers' && startsWith(github.ref_name, 'mukti-bin-')
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
@@ -33,7 +33,7 @@ jobs:
 
   upload-mukti-bin-assets:
     name: Publish for ${{ matrix.target }}
-    if: github.repository_owner == 'sunshowers-code' && startsWith(github.ref_name, 'mukti-bin-')
+    if: github.repository_owner == 'sunshowers' && startsWith(github.ref_name, 'mukti-bin-')
     needs:
       - create-mukti-bin-release
     strategy:
@@ -76,8 +76,8 @@ jobs:
 
 
   update-mukti-bin-release-meta:
-    name: Update netlify branch
-    if: github.repository_owner == 'sunshowers-code' && startsWith(github.ref_name, 'mukti-bin-')
+    name: Update release-meta branch
+    if: github.repository_owner == 'sunshowers' && startsWith(github.ref_name, 'mukti-bin-')
     needs:
       - create-mukti-bin-release
       - upload-mukti-bin-assets
@@ -88,7 +88,7 @@ jobs:
           ref: release-meta
       - name: Fetch mukti assets
         run: |
-          URL_PREFIX="https://github.com/sunshowers-code/mukti/releases/download/${{ github.ref_name }}/"
+          URL_PREFIX="https://github.com/sunshowers/mukti/releases/download/${{ github.ref_name }}/"
           mkdir -p ~/bin
           curl -LsSf "$URL_PREFIX/${{ needs.upload-mukti-bin-assets.outputs.linux-archive }}" | tar xzf - -C ~/bin
           ~/bin/mukti-bin add-release --version ${{ needs.create-mukti-bin-release.outputs.version }} --url-prefix "$URL_PREFIX" \
