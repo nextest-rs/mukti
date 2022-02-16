@@ -63,10 +63,10 @@ jobs:
       - name: Set archive output variable
         id: archive-output
         run: |
-          if [[ ${{ matrix.target }} == windows ]]; then
-            echo "::set-output name=${{ matrix.target }}::${{ github.ref_name }}-${{ matrix.target }}".zip
+          if [[ ${{ matrix.target }} == "x86_64-pc-windows-msvc" ]]; then
+            echo "::set-output name=${{ matrix.target }}::${{ github.ref_name }}-${{ matrix.target }}.zip"
           else
-            echo "::set-output name=${{ matrix.target }}::${{ github.ref_name }}-${{ matrix.target }}".tar.gz
+            echo "::set-output name=${{ matrix.target }}::${{ github.ref_name }}-${{ matrix.target }}.tar.gz"
           fi
     outputs:
       linux-archive: ${{ steps.archive-output.outputs.x86_64-unknown-linux-gnu }}
