@@ -60,7 +60,6 @@ jobs:
           zip: windows
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CARGO_PROFILE_RELEASE_LTO: true
       - name: Set archive output variable
         id: archive-output
         run: |
@@ -68,6 +67,7 @@ jobs:
             echo "::set-output name=${{ matrix.target }}::${{ github.ref_name }}-${{ matrix.target }}".zip
           else
             echo "::set-output name=${{ matrix.target }}::${{ github.ref_name }}-${{ matrix.target }}".tar.gz
+          fi
     outputs:
       linux-archive: ${{ steps.archive-output.outputs.x86_64-unknown-linux-gnu }}
       windows-archive: ${{ steps.archive-output.outputs.x86_64-pc-windows-msvc }}
