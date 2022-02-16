@@ -87,13 +87,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          ref: release-meta
+        ref: release-meta
       - name: Fetch mukti assets
         run: |
           URL_PREFIX="https://github.com/sunshowers-code/mukti/releases/${{ github.ref_name }}/download/"
-          curl -LsSf "$URL_PREFIX/${{ needs.upload-mukti-bin-assets.outputs.linux-archive }}" | tar xzf - -C ~
-          ~/mukti-bin add-release --version ${{ needs.create-mukti-bin-release.outputs.version }} --url-prefix "$URL_PREFIX" \
+          mkdir -p ~/bin
+          curl -LsSf "$URL_PREFIX/${{ needs.upload-mukti-bin-assets.outputs.linux-archive }}" | tar xzf - -C ~/bin
+          ~/bin/mukti-bin add-release --version ${{ needs.create-mukti-bin-release.outputs.version }} --url-prefix "$URL_PREFIX" \
             --archive x86_64-unknown-linux-gnu=${{ needs.upload-mukti-bin-assets.outputs.linux-archive }}
             --archive x86_64-pc-windows-msvc=${{ needs.upload-mukti-bin-assets.outputs.windows-archive }}
-          ~/mukti-bin generate-netlify --alias linux=x86_64-unknown-linux-gnu --alias windows=x86_64-pc-windows-msvc
+          ~/bin/mukti-bin generate-netlify --alias linux=x86_64-unknown-linux-gnu --alias windows=x86_64-pc-windows-msvc
+      - name: Push release metadata
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add .
+          git commit -m "Update release metadata for ${{ github.ref_name }}"
+          git push origin
