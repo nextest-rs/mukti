@@ -20,7 +20,7 @@ pub struct MuktiApp {
     command: MuktiCommand,
 
     /// JSON file to edit
-    #[clap(long, default_value = "releases.json")]
+    #[clap(long, default_value = ".releases.json")]
     json: Utf8PathBuf,
 }
 
@@ -49,6 +49,9 @@ enum MuktiCommand {
         /// Prefix for URLs
         #[clap(long, default_value = "/")]
         netlify_prefix: String,
+
+        /// Output directory.
+        out_dir: Utf8PathBuf,
     },
 }
 
@@ -73,8 +76,9 @@ impl MuktiApp {
             MuktiCommand::GenerateNetlify {
                 aliases,
                 netlify_prefix,
+                out_dir,
             } => {
-                generate_netlify_redirects(&release_json, &aliases, &netlify_prefix)?;
+                generate_netlify_redirects(&release_json, &aliases, &netlify_prefix, &out_dir)?;
             }
         }
 

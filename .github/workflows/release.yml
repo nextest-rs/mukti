@@ -77,6 +77,7 @@ jobs:
 
   update-mukti-bin-release-meta:
     name: Update release-meta branch
+    concurrency: ci-${{ github.ref }}
     if: github.repository_owner == 'sunshowers' && startsWith(github.ref_name, 'mukti-bin-')
     needs:
       - create-mukti-bin-release
@@ -84,21 +85,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          ref: release-meta
       - name: Fetch mukti assets
         run: |
           URL_PREFIX="https://github.com/sunshowers/mukti/releases/download/${{ github.ref_name }}/"
           mkdir -p ~/bin
           curl -LsSf "$URL_PREFIX/${{ needs.upload-mukti-bin-assets.outputs.linux-archive }}" | tar xzf - -C ~/bin
+      - name: Update .releases.json
+        run: |
           ~/bin/mukti-bin add-release --version ${{ needs.create-mukti-bin-release.outputs.version }} --url-prefix "$URL_PREFIX" \
             --archive x86_64-unknown-linux-gnu=${{ needs.upload-mukti-bin-assets.outputs.linux-archive }}
             --archive x86_64-pc-windows-msvc=${{ needs.upload-mukti-bin-assets.outputs.windows-archive }}
-          ~/bin/mukti-bin generate-netlify --alias linux=x86_64-unknown-linux-gnu --alias windows=x86_64-pc-windows-msvc
-      - name: Push release metadata
+      - name: Generate netlify redirects
         run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add .
-          git commit -m "Update release metadata for ${{ github.ref_name }}"
-          git push origin
+          mkdir out-dir
+          ~/bin/mukti-bin generate-netlify out-dir --alias linux=x86_64-unknown-linux-gnu --alias windows=x86_64-pc-windows-msvc
+      - name: Copy releases.json to output dir
+        run: |
+          cp .releases.json out-dir/releases.json
+      - name: Deploy release metadata
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: release-meta
+          folder: out-dir

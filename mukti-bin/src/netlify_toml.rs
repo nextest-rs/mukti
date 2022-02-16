@@ -3,6 +3,7 @@
 
 use crate::command::Alias;
 use atomicwrites::{AtomicFile, OverwriteBehavior};
+use camino::Utf8Path;
 use color_eyre::{eyre::Context, Result};
 use mukti_metadata::{ReleaseLocation, ReleasesJson};
 use std::{fmt::Write as _, io::Write as _};
@@ -11,6 +12,7 @@ pub(crate) fn generate_netlify_redirects(
     release_json: &ReleasesJson,
     aliases: &[Alias],
     netlify_prefix: &str,
+    out_dir: &Utf8Path,
 ) -> Result<()> {
     let netlify_prefix = netlify_prefix.trim_end_matches('/');
     let mut out = String::with_capacity(4096);
@@ -39,7 +41,10 @@ pub(crate) fn generate_netlify_redirects(
         }
     }
 
-    let file = AtomicFile::new("_redirects", OverwriteBehavior::AllowOverwrite);
+    let file = AtomicFile::new(
+        out_dir.join("_redirects"),
+        OverwriteBehavior::AllowOverwrite,
+    );
     file.write(|f| f.write_all(out.as_bytes()))
         .wrap_err("failed to write _redirects")?;
 
