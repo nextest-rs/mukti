@@ -3,11 +3,8 @@
 
 use crate::VersionRangeParseError;
 use semver::Version;
-use serde::de::Visitor;
-use serde::{ser::SerializeMap, Deserialize, Serialize, Serializer};
-use std::collections::BTreeMap;
-use std::fmt;
-use std::str::FromStr;
+use serde::{de::Visitor, ser::SerializeMap, Deserialize, Serialize, Serializer};
+use std::{collections::BTreeMap, fmt, str::FromStr};
 
 #[derive(Default, Deserialize, Serialize)]
 pub struct ReleaseJson {
