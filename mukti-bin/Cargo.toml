@@ -1,0 +1,15 @@
+[package]
+name = "mukti-bin"
+description = "Command to update release metadata"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+atomicwrites = "0.3.1"
+camino = "1.0.7"
+clap = { version = "3", features = ["derive"] }
+color-eyre = { version = "0.6", default-features = false }
+serde_json = "1"
+semver = "1"
+mukti-metadata = { path = "../mukti-metadata" }
