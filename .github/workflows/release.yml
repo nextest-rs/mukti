@@ -90,7 +90,7 @@ jobs:
         with:
           ref: release-meta
       - name: Fetch mukti assets
-        run:
+        run: |
           URL_PREFIX="https://github.com/sunshowers-code/mukti/releases/${{ github.ref-name }}/download/"
           curl -LsSf "$URL_PREFIX/${{ jobs.upload-mukti-bin-assets.outputs.linux-archive }}" | tar xzf - -C ~
           ~/mukti-bin add-release --version ${{ jobs.create-mukti-bin-release.outputs.version }} --url-prefix "$URL_PREFIX" \
