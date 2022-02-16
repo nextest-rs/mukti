@@ -87,7 +87,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        ref: release-meta
+        with:
+          ref: release-meta
       - name: Fetch mukti assets
         run: |
           URL_PREFIX="https://github.com/sunshowers-code/mukti/releases/${{ github.ref_name }}/download/"
