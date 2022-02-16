@@ -1,0 +1,99 @@
+# adapted from https://github.com/taiki-e/cargo-hack/blob/main/.github/workflows/release.yml
+
+name: Release binaries
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  create-mukti-bin-release:
+    if: github.repository_owner == 'sunshowers-code' && startsWith(github.ref_name, 'mukti-bin-')
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: taiki-e/create-gh-release-action@v1
+        with:
+          prefix: mukti-bin
+          title: $prefix $version
+          branch: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get version number
+        id: get-version-number
+        run: |
+          TAG_NAME=${{ github.ref-name }}
+          VERSION=${TAG_NAME#"mukti-bin-"}
+          echo "The version number is $VERSION"
+          echo "::set-output name=version::$VERSION"
+    outputs:
+      version: ${{ steps.get-version-number.outputs.version }}
+
+  upload-mukti-bin-assets:
+    name: Publish for ${{ matrix.target }}
+    if: github.repository_owner == 'sunshowers-code' && startsWith(github.ref_name, 'mukti-bin-')
+    needs:
+      - create-mukti-bin-release
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-18.04
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+      - uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: mukti-bin
+          target: ${{ matrix.target }}
+          tar: all
+          zip: windows
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_PROFILE_RELEASE_LTO: true
+      - name: Set archive output variable
+        id: archive-output
+        run: |
+          if [[ ${{ matrix.target }} == windows ]]; then
+            echo "::set-output name=${{ matrix.target }}::${{ github.ref-name }}-${{ matrix.target }}".zip
+          else
+            echo "::set-output name=${{ matrix.target }}::${{ github.ref-name }}-${{ matrix.target }}".tar.gz
+    outputs:
+      linux-archive: ${{ steps.archive-output.outputs.x86_64-unknown-linux-gnu }}
+      windows-archive: ${{ steps.archive-output.outputs.x86_64-pc-windows-msvc }}
+
+
+  update-mukti-bin-release-meta:
+    name: Update netlify branch
+    if: github.repository_owner == 'sunshowers-code' && startsWith(github.ref_name, 'mukti-bin-')
+    needs:
+      - create-mukti-bin-release
+      - upload-mukti-bin-assets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: release-meta
+      - name: Fetch mukti assets
+        run:
+          URL_PREFIX="https://github.com/sunshowers-code/mukti/releases/${{ github.ref-name }}/download/"
+          curl -LsSf "$URL_PREFIX/${{ jobs.upload-mukti-bin-assets.outputs.linux-archive }}" | tar xzf - -C ~
+          ~/mukti-bin add-release --version ${{ jobs.create-mukti-bin-release.outputs.version }} --url-prefix "$URL_PREFIX" \
+            --archive x86_64-unknown-linux-gnu=${{ jobs.upload-mukti-bin-assets.outputs.linux-archive }}
+            --archive x86_64-pc-windows-msvc=${{ jobs.upload-mukti-bin-assets.outputs.windows-archive }}
+          ~/mukti-bin generate-netlify --alias linux=x86_64-unknown-linux-gnu --alias windows=x86_64-pc-windows-msvc
