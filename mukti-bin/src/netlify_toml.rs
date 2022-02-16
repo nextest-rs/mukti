@@ -4,11 +4,11 @@
 use crate::command::Alias;
 use atomicwrites::{AtomicFile, OverwriteBehavior};
 use color_eyre::{eyre::Context, Result};
-use mukti_metadata::{ReleaseJson, ReleaseLocation};
+use mukti_metadata::{ReleaseLocation, ReleasesJson};
 use std::{fmt::Write as _, io::Write as _};
 
 pub(crate) fn generate_netlify_redirects(
-    release_json: &ReleaseJson,
+    release_json: &ReleasesJson,
     aliases: &[Alias],
     netlify_prefix: &str,
 ) -> Result<()> {

@@ -20,7 +20,7 @@ pub struct MuktiApp {
     command: MuktiCommand,
 
     /// JSON file to edit
-    #[clap(default_value = "releases.json")]
+    #[clap(long, default_value = "releases.json")]
     json: Utf8PathBuf,
 }
 

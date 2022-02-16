@@ -7,26 +7,26 @@ use crate::command::Archive;
 use atomicwrites::{AtomicFile, OverwriteBehavior};
 use camino::Utf8Path;
 use color_eyre::{eyre::Context, Result};
-use mukti_metadata::{ReleaseData, ReleaseJson, ReleaseLocation, VersionRange};
+use mukti_metadata::{ReleaseData, ReleaseLocation, ReleasesJson, VersionRange};
 use semver::Version;
 use std::{collections::BTreeMap, io::BufWriter};
 
 /// Read the releases.json file.
-pub(crate) fn read_release_json(path: &Utf8Path) -> Result<ReleaseJson> {
-    let release_json: ReleaseJson = if path.exists() {
+pub(crate) fn read_release_json(path: &Utf8Path) -> Result<ReleasesJson> {
+    let release_json: ReleasesJson = if path.exists() {
         let json = std::fs::read_to_string(path)
             .wrap_err_with(|| format!("failed to read releases JSON file at {}", path))?;
         serde_json::from_str(&json)
             .wrap_err_with(|| format!("failed to deserialize releases JSON at {}", path))?
     } else {
-        ReleaseJson::default()
+        ReleasesJson::default()
     };
 
     Ok(release_json)
 }
 
 pub(crate) fn update_release_json(
-    release_json: &mut ReleaseJson,
+    release_json: &mut ReleasesJson,
     url_prefix: &str,
     version: &Version,
     archives: &[Archive],
