@@ -55,6 +55,7 @@ jobs:
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: mukti-bin
+          archive: $tag-$target
           target: ${{ matrix.target }}
           tar: all
           zip: windows
@@ -62,6 +63,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Set archive output variable
         id: archive-output
+        shell: bash
         run: |
           if [[ ${{ matrix.target }} == "x86_64-pc-windows-msvc" ]]; then
             echo "::set-output name=${{ matrix.target }}::${{ github.ref_name }}-${{ matrix.target }}.zip"
