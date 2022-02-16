@@ -85,13 +85,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Fetch mukti assets
+      - name: Fetch mukti assets and update .releases.json
         run: |
           URL_PREFIX="https://github.com/sunshowers/mukti/releases/download/${{ github.ref_name }}/"
           mkdir -p ~/bin
           curl -LsSf "$URL_PREFIX/${{ needs.upload-mukti-bin-assets.outputs.linux-archive }}" | tar xzf - -C ~/bin
-      - name: Update .releases.json
-        run: |
           ~/bin/mukti-bin add-release --version ${{ needs.create-mukti-bin-release.outputs.version }} --url-prefix "$URL_PREFIX" \
             --archive x86_64-unknown-linux-gnu=${{ needs.upload-mukti-bin-assets.outputs.linux-archive }} \
             --archive x86_64-pc-windows-msvc=${{ needs.upload-mukti-bin-assets.outputs.windows-archive }}
