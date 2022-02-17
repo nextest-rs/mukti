@@ -67,8 +67,8 @@ fn write_entries(
     for location in &version_data.locations {
         writeln!(
             out,
-            "{}/{}/{} {} 302",
-            netlify_prefix, version, location.target, location.url
+            "{}/{}/{}.{} {} 302",
+            netlify_prefix, version, location.target, location.format, location.url
         )
         .expect("writing to a string is infallible");
         for alias in aliases.iter().filter(|alias| {
