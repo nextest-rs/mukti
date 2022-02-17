@@ -8,7 +8,7 @@ use atomicwrites::{AtomicFile, OverwriteBehavior};
 use camino::Utf8Path;
 use color_eyre::{eyre::Context, Result};
 use mukti_metadata::{
-    ReleaseLocation, ReleaseStatus, ReleaseVersionData, ReleaseRangeData, ReleasesJson,
+    ReleaseLocation, ReleaseRangeData, ReleaseStatus, ReleaseVersionData, ReleasesJson,
     VersionRange,
 };
 use semver::Version;
