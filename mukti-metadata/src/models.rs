@@ -13,11 +13,11 @@ pub struct ReleasesJson {
 
     /// Map of version range (major or minor version) to release data about it
     #[serde(serialize_with = "serialize_reverse")]
-    pub ranges: BTreeMap<VersionRange, ReleaseData>,
+    pub ranges: BTreeMap<VersionRange, ReleaseRangeData>,
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct ReleaseData {
+pub struct ReleaseRangeData {
     /// The latest version within this range (can be a prerelease)
     pub latest: Version,
 
@@ -26,7 +26,26 @@ pub struct ReleaseData {
 
     /// All known versions
     #[serde(serialize_with = "serialize_reverse")]
-    pub versions: BTreeMap<Version, Vec<ReleaseLocation>>,
+    pub versions: BTreeMap<Version, ReleaseVersionData>,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ReleaseVersionData {
+    /// The status of a release
+    pub status: ReleaseStatus,
+
+    /// Release locations
+    pub locations: Vec<ReleaseLocation>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ReleaseStatus {
+    /// This release is active.
+    Active,
+
+    /// This release was yanked.
+    Yanked,
 }
 
 #[derive(Deserialize, Serialize)]

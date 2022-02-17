@@ -7,7 +7,10 @@ use crate::command::Archive;
 use atomicwrites::{AtomicFile, OverwriteBehavior};
 use camino::Utf8Path;
 use color_eyre::{eyre::Context, Result};
-use mukti_metadata::{ReleaseData, ReleaseLocation, ReleasesJson, VersionRange};
+use mukti_metadata::{
+    ReleaseLocation, ReleaseStatus, ReleaseVersionData, ReleaseRangeData, ReleasesJson,
+    VersionRange,
+};
 use semver::Version;
 use std::{collections::BTreeMap, io::BufWriter};
 
@@ -43,7 +46,7 @@ pub(crate) fn update_release_json(
         let data = release_json
             .ranges
             .entry(range)
-            .or_insert_with(|| ReleaseData {
+            .or_insert_with(|| ReleaseRangeData {
                 latest: version.clone(),
                 is_prerelease: !version.pre.is_empty(),
                 versions: BTreeMap::new(),
@@ -56,7 +59,13 @@ pub(crate) fn update_release_json(
                 url: format!("{}/{}", url_prefix, archive.name),
             })
             .collect();
-        data.versions.insert(version.clone(), locations);
+        data.versions.insert(
+            version.clone(),
+            ReleaseVersionData {
+                status: ReleaseStatus::Active,
+                locations,
+            },
+        );
 
         if version > &data.latest {
             data.latest = version.clone();
