@@ -233,7 +233,7 @@ dependencies = [
 
 [[package]]
 name = "mukti-bin"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "atomicwrites",
  "camino",
