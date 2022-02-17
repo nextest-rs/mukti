@@ -89,7 +89,7 @@ jobs:
         run: |
           ARCHIVE_PREFIX="https://github.com/sunshowers/mukti/releases/download/${{ github.ref_name }}"
           mkdir -p ~/bin
-          curl -LsSf "$ARCHIVE_PREFIX/${{ needs.upload-mukti-bin-assets.outputs.linux-archive }}" | tar xzf - -C ~/bin
+          curl -LsSf "$ARCHIVE_PREFIX/${{ needs.upload-mukti-bin-assets.outputs.linux-tar-gz }}" | tar xzf - -C ~/bin
           ~/bin/mukti-bin add-release --version ${{ needs.create-mukti-bin-release.outputs.version }} \
             --release-url "https://github.com/sunshowers/mukti/releases/${{ github.ref_name }}" \
             --archive-prefix "$ARCHIVE_PREFIX" \
@@ -99,7 +99,7 @@ jobs:
       - name: Generate netlify redirects
         run: |
           mkdir out-dir
-          ~/bin/mukti-bin generate-netlify out-dir --alias linux=x86_64-unknown-linux-gnu --alias windows=x86_64-pc-windows-msvc
+          ~/bin/mukti-bin generate-netlify out-dir --alias linux=x86_64-unknown-linux-gnu:tar.gz --alias windows=x86_64-pc-windows-msvc:zip
       - name: Update releases.json on main branch
         uses: EndBug/add-and-commit@v8
         with:
