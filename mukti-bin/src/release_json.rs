@@ -30,7 +30,8 @@ pub(crate) fn read_release_json(path: &Utf8Path) -> Result<ReleasesJson> {
 
 pub(crate) fn update_release_json(
     release_json: &mut ReleasesJson,
-    url_prefix: &str,
+    release_url: &str,
+    archive_prefix: &str,
     version: &Version,
     archives: &[Archive],
     path: &Utf8Path,
@@ -56,12 +57,13 @@ pub(crate) fn update_release_json(
             .iter()
             .map(|archive| ReleaseLocation {
                 target: archive.target.clone(),
-                url: format!("{}/{}", url_prefix, archive.name),
+                url: format!("{}/{}", archive_prefix, archive.name),
             })
             .collect();
         data.versions.insert(
             version.clone(),
             ReleaseVersionData {
+                release_url: release_url.to_owned(),
                 status: ReleaseStatus::Active,
                 locations,
             },

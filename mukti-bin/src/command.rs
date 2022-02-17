@@ -28,9 +28,13 @@ pub struct MuktiApp {
 enum MuktiCommand {
     /// Add a release to the release JSON
     AddRelease {
+        /// Release URL
+        #[clap(long, required = true)]
+        release_url: String,
+
         /// URL prefix to use
-        #[clap(long = "url-prefix", required = true)]
-        url_prefix: String,
+        #[clap(long, required = true)]
+        archive_prefix: String,
 
         /// Version to publish
         #[clap(long = "version", required = true)]
@@ -61,13 +65,15 @@ impl MuktiApp {
 
         match self.command {
             MuktiCommand::AddRelease {
-                url_prefix,
+                release_url,
+                archive_prefix,
                 version,
                 archives,
             } => {
                 update_release_json(
                     &mut release_json,
-                    &url_prefix,
+                    &release_url,
+                    &archive_prefix,
                     &version,
                     &archives,
                     &self.json,

@@ -31,6 +31,9 @@ pub struct ReleaseRangeData {
 
 #[derive(Deserialize, Serialize)]
 pub struct ReleaseVersionData {
+    /// Canonical URL for this release
+    pub release_url: String,
+
     /// The status of a release
     pub status: ReleaseStatus,
 

@@ -5,7 +5,7 @@ use crate::command::Alias;
 use atomicwrites::{AtomicFile, OverwriteBehavior};
 use camino::Utf8Path;
 use color_eyre::{eyre::Context, Result};
-use mukti_metadata::{ReleaseLocation, ReleasesJson};
+use mukti_metadata::{ReleaseVersionData, ReleasesJson};
 use std::{fmt::Write as _, io::Write as _};
 
 pub(crate) fn generate_netlify_redirects(
@@ -24,7 +24,7 @@ pub(crate) fn generate_netlify_redirects(
         let latest_version_data = &latest_range_data.versions[&latest_range_data.latest];
         write_entries(
             &"latest",
-            &latest_version_data.locations,
+            latest_version_data,
             aliases,
             netlify_prefix,
             &mut out,
@@ -34,22 +34,10 @@ pub(crate) fn generate_netlify_redirects(
     for (range, data) in &release_json.ranges {
         if !data.is_prerelease {
             let version_data = &data.versions[&data.latest];
-            write_entries(
-                range,
-                &version_data.locations,
-                aliases,
-                netlify_prefix,
-                &mut out,
-            );
+            write_entries(range, version_data, aliases, netlify_prefix, &mut out);
         }
         for (version, version_data) in &data.versions {
-            write_entries(
-                version,
-                &version_data.locations,
-                aliases,
-                netlify_prefix,
-                &mut out,
-            );
+            write_entries(version, version_data, aliases, netlify_prefix, &mut out);
         }
     }
 
@@ -65,12 +53,18 @@ pub(crate) fn generate_netlify_redirects(
 
 fn write_entries(
     version: &dyn std::fmt::Display,
-    locations: &[ReleaseLocation],
+    version_data: &ReleaseVersionData,
     aliases: &[Alias],
     netlify_prefix: &str,
     out: &mut String,
 ) {
-    for location in locations {
+    writeln!(
+        out,
+        "{}/{}/release {} 302",
+        netlify_prefix, version, &version_data.release_url
+    )
+    .expect("writing to a string is infallible");
+    for location in &version_data.locations {
         writeln!(
             out,
             "{}/{}/{} {} 302",

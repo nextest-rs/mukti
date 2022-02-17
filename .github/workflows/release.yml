@@ -86,10 +86,12 @@ jobs:
       - uses: actions/checkout@v2
       - name: Fetch mukti assets and update .releases.json
         run: |
-          URL_PREFIX="https://github.com/sunshowers/mukti/releases/download/${{ github.ref_name }}"
+          ARCHIVE_PREFIX="https://github.com/sunshowers/mukti/releases/download/${{ github.ref_name }}"
           mkdir -p ~/bin
-          curl -LsSf "$URL_PREFIX/${{ needs.upload-mukti-bin-assets.outputs.linux-archive }}" | tar xzf - -C ~/bin
-          ~/bin/mukti-bin add-release --version ${{ needs.create-mukti-bin-release.outputs.version }} --url-prefix "$URL_PREFIX" \
+          curl -LsSf "$ARCHIVE_PREFIX/${{ needs.upload-mukti-bin-assets.outputs.linux-archive }}" | tar xzf - -C ~/bin
+          ~/bin/mukti-bin add-release --version ${{ needs.create-mukti-bin-release.outputs.version }} \
+            --release-url "https://github.com/sunshowers/mukti/releases/${{ github.ref_name }}" \
+            --archive-prefix "$ARCHIVE_PREFIX" \
             --archive x86_64-unknown-linux-gnu=${{ needs.upload-mukti-bin-assets.outputs.linux-archive }} \
             --archive x86_64-pc-windows-msvc=${{ needs.upload-mukti-bin-assets.outputs.windows-archive }}
       - name: Generate netlify redirects
