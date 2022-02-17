@@ -70,10 +70,29 @@ pub(crate) fn update_release_json(
             },
         );
 
-        if version > &data.latest {
-            data.latest = version.clone();
+        // Look for the latest release that isn't a pre-release.
+        // TODO: also consider yanked versions here.
+        let latest_non_prerelease = data
+            .versions
+            .keys()
+            .rev()
+            .find(|version| version.pre.is_empty());
+        match latest_non_prerelease {
+            Some(version) => {
+                data.latest = version.clone();
+                data.is_prerelease = false;
+            }
+            None => {
+                data.latest = data
+                    .versions
+                    .keys()
+                    .rev()
+                    .next()
+                    .expect("we just added a release so this can't be empty")
+                    .clone();
+                data.is_prerelease = true;
+            }
         }
-        data.is_prerelease = !data.latest.pre.is_empty();
     }
 
     // Check if there's a newer release.
