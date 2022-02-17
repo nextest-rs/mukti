@@ -56,6 +56,9 @@ pub struct ReleaseLocation {
     /// The target string
     pub target: String,
 
+    /// The archive format (e.g. ".tar.gz" or ".zip")
+    pub format: String,
+
     /// The URL the target can be downloaded at
     pub url: String,
 }

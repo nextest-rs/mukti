@@ -71,7 +71,10 @@ fn write_entries(
             netlify_prefix, version, location.target, location.url
         )
         .expect("writing to a string is infallible");
-        if let Some(alias) = aliases.iter().find(|alias| alias.target == location.target) {
+        for alias in aliases.iter().filter(|alias| {
+            alias.target_format.target == location.target
+                && alias.target_format.format == location.format
+        }) {
             writeln!(
                 out,
                 "{}/{}/{} {} 302",

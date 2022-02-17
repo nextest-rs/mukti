@@ -41,13 +41,13 @@ enum MuktiCommand {
         version: Version,
 
         /// Archive names.
-        #[clap(long = "archive", value_name = "TARGET=NAME")]
+        #[clap(long = "archive", value_name = "TARGET:FORMAT=NAME")]
         archives: Vec<Archive>,
     },
     /// Generate a netlify _redirects file from the release JSON
     GenerateNetlify {
         /// Aliases to use.
-        #[clap(long = "alias", value_name = "ALIAS=TARGET")]
+        #[clap(long = "alias", value_name = "ALIAS=TARGET:FORMAT")]
         aliases: Vec<Alias>,
 
         /// Prefix for URLs
@@ -94,7 +94,7 @@ impl MuktiApp {
 
 #[derive(Debug)]
 pub(crate) struct Archive {
-    pub(crate) target: String,
+    pub(crate) target_format: TargetFormat,
     pub(crate) name: String,
 }
 
@@ -102,31 +102,55 @@ impl FromStr for Archive {
     type Err = NameValueParseError;
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
-        let (target, name) = name_value_parse(input)?;
-        Ok(Self { target, name })
+        let (target_format, name) = name_value_parse(input, '=')?;
+        let target_format: TargetFormat = target_format.parse()?;
+        Ok(Self {
+            target_format,
+            name,
+        })
     }
 }
 
 #[derive(Debug)]
 pub(crate) struct Alias {
     pub(crate) alias: String,
-    pub(crate) target: String,
+    pub(crate) target_format: TargetFormat,
 }
 
 impl FromStr for Alias {
     type Err = NameValueParseError;
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
-        let (alias, target) = name_value_parse(input)?;
-        Ok(Self { alias, target })
+        let (alias, target_format) = name_value_parse(input, '=')?;
+        let target_format: TargetFormat = target_format.parse()?;
+        Ok(Self {
+            alias,
+            target_format,
+        })
     }
 }
 
-fn name_value_parse(input: &str) -> Result<(String, String), NameValueParseError> {
-    match input.split_once('=') {
+#[derive(Debug)]
+pub(crate) struct TargetFormat {
+    pub(crate) target: String,
+    pub(crate) format: String,
+}
+
+impl FromStr for TargetFormat {
+    type Err = NameValueParseError;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        let (target, format) = name_value_parse(input, ':')?;
+        Ok(Self { target, format })
+    }
+}
+
+fn name_value_parse(input: &str, delimiter: char) -> Result<(String, String), NameValueParseError> {
+    match input.split_once(delimiter) {
         Some((k, v)) => Ok((k.to_owned(), v.to_owned())),
         None => Err(NameValueParseError {
             input: input.to_owned(),
+            delimiter,
         }),
     }
 }

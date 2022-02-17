@@ -66,13 +66,14 @@ jobs:
         shell: bash
         run: |
           if [[ ${{ matrix.target }} == "x86_64-pc-windows-msvc" ]]; then
-            echo "::set-output name=${{ matrix.target }}::${{ github.ref_name }}-${{ matrix.target }}.zip"
+            echo "::set-output name=${{ matrix.target }}-zip::${{ github.ref_name }}-${{ matrix.target }}.zip"
           else
-            echo "::set-output name=${{ matrix.target }}::${{ github.ref_name }}-${{ matrix.target }}.tar.gz"
+            echo "::set-output name=${{ matrix.target }}-tar-gz::${{ github.ref_name }}-${{ matrix.target }}.tar.gz"
           fi
     outputs:
-      linux-archive: ${{ steps.archive-output.outputs.x86_64-unknown-linux-gnu }}
-      windows-archive: ${{ steps.archive-output.outputs.x86_64-pc-windows-msvc }}
+      linux-tar-gz: ${{ steps.archive-output.outputs.x86_64-unknown-linux-gnu-tar-gz }}
+      windows-tar-gz: ${{ steps.archive-output.outputs.x86_64-pc-windows-msvc-tar-gz }}
+      windows-zip: ${{ steps.archive-output.outputs.x86_64-pc-windows-msvc-zip }}
 
   update-mukti-bin-release-meta:
     name: Update release-meta branch
@@ -92,8 +93,9 @@ jobs:
           ~/bin/mukti-bin add-release --version ${{ needs.create-mukti-bin-release.outputs.version }} \
             --release-url "https://github.com/sunshowers/mukti/releases/${{ github.ref_name }}" \
             --archive-prefix "$ARCHIVE_PREFIX" \
-            --archive x86_64-unknown-linux-gnu=${{ needs.upload-mukti-bin-assets.outputs.linux-archive }} \
-            --archive x86_64-pc-windows-msvc=${{ needs.upload-mukti-bin-assets.outputs.windows-archive }}
+            --archive x86_64-unknown-linux-gnu:tar.gz=${{ needs.upload-mukti-bin-assets.outputs.linux-tar-gz }} \
+            --archive x86_64-pc-windows-msvc:tar.gz=${{ needs.upload-mukti-bin-assets.outputs.windows-tar-gz }} \
+            --archive x86_64-pc-windows-msvc:zip=${{ needs.upload-mukti-bin-assets.outputs.windows-zip }}
       - name: Generate netlify redirects
         run: |
           mkdir out-dir

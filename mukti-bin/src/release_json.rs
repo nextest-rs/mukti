@@ -56,7 +56,8 @@ pub(crate) fn update_release_json(
         let locations: Vec<_> = archives
             .iter()
             .map(|archive| ReleaseLocation {
-                target: archive.target.clone(),
+                target: archive.target_format.target.clone(),
+                format: archive.target_format.format.clone(),
                 url: format!("{}/{}", archive_prefix, archive.name),
             })
             .collect();
