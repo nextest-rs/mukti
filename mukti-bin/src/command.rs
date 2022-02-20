@@ -61,8 +61,6 @@ enum MuktiCommand {
 
 impl MuktiApp {
     pub fn exec(self) -> Result<()> {
-        let mut release_json = read_release_json(&self.json)?;
-
         match self.command {
             MuktiCommand::AddRelease {
                 release_url,
@@ -70,6 +68,7 @@ impl MuktiApp {
                 version,
                 archives,
             } => {
+                let mut release_json = read_release_json(&self.json, true)?;
                 update_release_json(
                     &mut release_json,
                     &release_url,
@@ -84,6 +83,7 @@ impl MuktiApp {
                 netlify_prefix,
                 out_dir,
             } => {
+                let release_json = read_release_json(&self.json, false)?;
                 generate_netlify_redirects(&release_json, &aliases, &netlify_prefix, &out_dir)?;
             }
         }
