@@ -12,7 +12,8 @@ use mukti_metadata::{
     VersionRange,
 };
 use semver::Version;
-use std::{collections::BTreeMap, io::BufWriter};
+use serde_json::ser::PrettyFormatter;
+use std::{collections::BTreeMap, fs::File, io::BufWriter};
 
 /// Read the releases.json file.
 pub(crate) fn read_release_json(path: &Utf8Path, allow_missing: bool) -> Result<ReleasesJson> {
@@ -106,7 +107,7 @@ pub(crate) fn update_release_json(
     release_json.latest = latest_range;
 
     let file = AtomicFile::new(path, OverwriteBehavior::AllowOverwrite);
-    file.write(|f| serde_json::to_writer(BufWriter::new(f), &release_json))
+    file.write(|f| serde_json::to_writer_pretty(BufWriter::new(f), &release_json))
         .wrap_err_with(|| format!("failed to serialize releases JSON to {}", path))?;
 
     Ok(())
