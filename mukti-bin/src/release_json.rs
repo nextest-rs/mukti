@@ -12,8 +12,7 @@ use mukti_metadata::{
     VersionRange,
 };
 use semver::Version;
-use serde_json::ser::PrettyFormatter;
-use std::{collections::BTreeMap, fs::File, io::BufWriter};
+use std::{collections::BTreeMap, io::BufWriter};
 
 /// Read the releases.json file.
 pub(crate) fn read_release_json(path: &Utf8Path, allow_missing: bool) -> Result<ReleasesJson> {
