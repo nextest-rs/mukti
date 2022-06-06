@@ -1,4 +1,5 @@
 # mukti
-A simple release manager (still a work in progress, this may not go anywhere!)
 
-Do not use this if you're not me. I reserve the right to make breaking changes at any time.
+A simple release manager. Used by [cargo nextest](https://nexte.st).
+
+This is currently not ready to be used by others, though it might get there some day.
