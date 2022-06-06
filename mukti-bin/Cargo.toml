@@ -7,9 +7,9 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 atomicwrites = "0.3.1"
-camino = "1.0.7"
-clap = { version = "3", features = ["derive"] }
-color-eyre = { version = "0.6", default-features = false }
-serde_json = "1"
-semver = "1"
+camino = "1.0.9"
+clap = { version = "3.1.18", features = ["derive"] }
+color-eyre = { version = "0.6.1", default-features = false }
+serde_json = "1.0.81"
+semver = "1.0.9"
 mukti-metadata = { path = "../mukti-metadata" }
