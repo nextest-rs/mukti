@@ -8,21 +8,21 @@ use atomicwrites::{AtomicFile, OverwriteBehavior};
 use camino::Utf8Path;
 use color_eyre::eyre::{bail, Result, WrapErr};
 use mukti_metadata::{
-    ReleaseLocation, ReleaseRangeData, ReleaseStatus, ReleaseVersionData, ReleasesJson,
+    MuktiReleasesJson, ReleaseLocation, ReleaseRangeData, ReleaseStatus, ReleaseVersionData,
     VersionRange,
 };
 use semver::Version;
 use std::{collections::BTreeMap, io::BufWriter};
 
 /// Read the releases.json file.
-pub(crate) fn read_release_json(path: &Utf8Path, allow_missing: bool) -> Result<ReleasesJson> {
-    let release_json: ReleasesJson = if path.exists() {
+pub(crate) fn read_release_json(path: &Utf8Path, allow_missing: bool) -> Result<MuktiReleasesJson> {
+    let release_json: MuktiReleasesJson = if path.exists() {
         let json = std::fs::read_to_string(path)
             .wrap_err_with(|| format!("failed to read releases JSON file at {}", path))?;
         serde_json::from_str(&json)
             .wrap_err_with(|| format!("failed to deserialize releases JSON at {}", path))?
     } else if allow_missing {
-        ReleasesJson::default()
+        MuktiReleasesJson::default()
     } else {
         bail!("releases JSON not found at {}", path);
     };
@@ -31,7 +31,7 @@ pub(crate) fn read_release_json(path: &Utf8Path, allow_missing: bool) -> Result<
 }
 
 pub(crate) fn update_release_json(
-    release_json: &mut ReleasesJson,
+    release_json: &mut MuktiReleasesJson,
     release_url: &str,
     archive_prefix: &str,
     version: &Version,
@@ -43,10 +43,23 @@ pub(crate) fn update_release_json(
         return Ok(());
     }
 
+    if release_json.projects.len() != 1 {
+        bail!(
+            "mukti-bin currently only supports one project, {} found",
+            release_json.projects.len()
+        );
+    }
+
+    let project = release_json
+        .projects
+        .values_mut()
+        .next()
+        .expect("release_json has one project");
+
     // Read the release JSON file.
     let range = VersionRange::from_version(version);
     {
-        let data = release_json
+        let data = project
             .ranges
             .entry(range)
             .or_insert_with(|| ReleaseRangeData {
@@ -98,12 +111,12 @@ pub(crate) fn update_release_json(
     }
 
     // Check if there's a newer release.
-    let latest_range = release_json
+    let latest_range = project
         .ranges
         .iter()
         .filter_map(|(range, data)| (!data.is_prerelease).then(|| *range))
         .max();
-    release_json.latest = latest_range;
+    project.latest = latest_range;
 
     let file = AtomicFile::new(path, OverwriteBehavior::AllowOverwrite);
     file.write(|f| serde_json::to_writer_pretty(BufWriter::new(f), &release_json))

@@ -7,7 +7,13 @@ use serde::{de::Visitor, ser::SerializeMap, Deserialize, Serialize, Serializer};
 use std::{collections::BTreeMap, fmt, str::FromStr};
 
 #[derive(Default, Deserialize, Serialize)]
-pub struct ReleasesJson {
+pub struct MuktiReleasesJson {
+    /// The projects that are part of this releases.json.
+    pub projects: BTreeMap<String, MuktiProject>,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct MuktiProject {
     /// The latest version range (key in the releases field) without any pre-releases.
     pub latest: Option<VersionRange>,
 
