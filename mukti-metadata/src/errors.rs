@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::VersionRangeKind;
-use std::{error, fmt, num::ParseIntError};
+use std::num::ParseIntError;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 #[non_exhaustive]
+#[error("error parsing version range `{input}` at {} component", .component.description())]
 pub struct VersionRangeParseError {
     /// The input that failed to parse.
     pub input: String,
@@ -14,6 +16,7 @@ pub struct VersionRangeParseError {
     pub component: VersionRangeKind,
 
     /// The error that occurred.
+    #[source]
     pub error: ParseIntError,
 }
 
@@ -24,22 +27,5 @@ impl VersionRangeParseError {
             component,
             error,
         }
-    }
-}
-
-impl fmt::Display for VersionRangeParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "unable to parse version range input {} at component {}",
-            self.input,
-            self.component.description()
-        )
-    }
-}
-
-impl error::Error for VersionRangeParseError {
-    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-        Some(&self.error)
     }
 }
