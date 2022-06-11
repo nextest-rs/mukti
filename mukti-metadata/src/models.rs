@@ -6,13 +6,13 @@ use semver::Version;
 use serde::{de::Visitor, ser::SerializeMap, Deserialize, Serialize, Serializer};
 use std::{collections::BTreeMap, fmt, str::FromStr};
 
-#[derive(Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct MuktiReleasesJson {
     /// The projects that are part of this releases.json.
     pub projects: BTreeMap<String, MuktiProject>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct MuktiProject {
     /// The latest version range (key in the releases field) without any pre-releases.
     pub latest: Option<VersionRange>,
@@ -22,7 +22,7 @@ pub struct MuktiProject {
     pub ranges: BTreeMap<VersionRange, ReleaseRangeData>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ReleaseRangeData {
     /// The latest version within this range (can be a prerelease)
     pub latest: Version,
@@ -35,7 +35,7 @@ pub struct ReleaseRangeData {
     pub versions: BTreeMap<Version, ReleaseVersionData>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ReleaseVersionData {
     /// Canonical URL for this release
     pub release_url: String,
@@ -47,7 +47,7 @@ pub struct ReleaseVersionData {
     pub locations: Vec<ReleaseLocation>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum ReleaseStatus {
     /// This release is active.
@@ -57,7 +57,7 @@ pub enum ReleaseStatus {
     Yanked,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ReleaseLocation {
     /// The target string
     pub target: String,
@@ -83,7 +83,7 @@ where
 }
 
 /// Represents a range of versions
-#[derive(Clone, Copy, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub enum VersionRange {
     Patch(u64),
     Minor(u64),
