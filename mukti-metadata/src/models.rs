@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT or Apache-2.0
 
 use crate::VersionRangeParseError;
-use semver::Version;
+use semver::{Version, VersionReq};
 use serde::{de::Visitor, ser::SerializeMap, Deserialize, Serialize, Serializer};
 use std::{collections::BTreeMap, fmt, str::FromStr};
 
@@ -20,6 +20,37 @@ pub struct MuktiProject {
     /// Map of version range (major or minor version) to release data about it
     #[serde(serialize_with = "serialize_reverse")]
     pub ranges: BTreeMap<VersionRange, ReleaseRangeData>,
+}
+
+impl MuktiProject {
+    /// Return all version data for this release, ordered by most recent version first.
+    ///
+    /// Includes pre-release and yanked versions.
+    pub fn all_versions(&self) -> impl Iterator<Item = (&Version, &ReleaseVersionData)> {
+        self.ranges
+            .values()
+            .rev()
+            .flat_map(|range| range.versions.iter().rev())
+    }
+
+    /// Retrieve data for this exact version if found.
+    ///
+    /// Can include yanked or pre-release versions.
+    pub fn get_version_data(&self, version: &Version) -> Option<&ReleaseVersionData> {
+        // Ignore build metadata since it isn't relevant.
+        self.all_versions().find_map(|(v2, version_data)| {
+            eq_ignoring_build_metadata(version, v2).then(|| version_data)
+        })
+    }
+
+    /// Retrieve the latest version that matches this `VersionReq`.
+    ///
+    /// This will match the latest non-pre-release, non-yanked version.
+    pub fn get_latest_matching(&self, req: &VersionReq) -> Option<(&Version, &ReleaseVersionData)> {
+        self.all_versions().find(|&(version, version_data)| {
+            version_data.status == ReleaseStatus::Active && req.matches(version)
+        })
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -47,7 +78,7 @@ pub struct ReleaseVersionData {
     pub locations: Vec<ReleaseLocation>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum ReleaseStatus {
     /// This release is active.
@@ -186,5 +217,105 @@ impl<'de> Visitor<'de> for VersionRangeDeVisitor {
         E: serde::de::Error,
     {
         s.parse().map_err(|err| E::custom(err))
+    }
+}
+
+#[inline]
+fn eq_ignoring_build_metadata(a: &Version, b: &Version) -> bool {
+    a.major == b.major && a.minor == b.minor && a.patch == b.patch && a.pre == b.pre
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    static FIXTURE_JSON: &str = include_str!("../../fixtures/mukti-releases.json");
+
+    #[test]
+    fn test_get_version_data() {
+        let json: MuktiReleasesJson = serde_json::from_str(FIXTURE_JSON).unwrap();
+        let project = &json.projects["mukti"];
+        // Active version matches
+        assert_eq!(
+            get_version_data(project, "0.5.3").release_url,
+            "https://my-release-url/version-0.5.3",
+            "data for active version 0.5.3 matches"
+        );
+        // Yanked version still matches.
+        assert_eq!(
+            get_version_data(project, "0.5.2").release_url,
+            "https://my-release-url/version-0.5.2",
+            "data for yanked version 0.5.2 matches"
+        );
+        // Pre-release version matches.
+        assert_eq!(
+            get_version_data(project, "0.6.0-alpha.1").release_url,
+            "https://my-release-url/version-0.6.0-alpha.1",
+            "data for pre-release 0.6.0-alpha.1 matches"
+        );
+    }
+
+    #[track_caller]
+    fn version(version_str: &str) -> Version {
+        Version::parse(version_str)
+            .unwrap_or_else(|err| panic!("unable to parse version string {version_str}: {err}"))
+    }
+
+    fn get_version_data<'a>(
+        project: &'a MuktiProject,
+        version_str: &str,
+    ) -> &'a ReleaseVersionData {
+        let version = version(version_str);
+        project
+            .get_version_data(&version)
+            .unwrap_or_else(|| panic!("no version data found for {version_str}"))
+    }
+
+    #[test]
+    fn test_get_latest_matching() {
+        let json: MuktiReleasesJson = serde_json::from_str(FIXTURE_JSON).unwrap();
+        let project = &json.projects["mukti"];
+
+        // Latest version.
+        assert_eq!(
+            get_latest_matching_version(project, "*"),
+            Some(&version("0.5.3")),
+            "latest non-prerelease version"
+        );
+        assert_eq!(
+            get_latest_matching_version(project, "0.5"),
+            Some(&version("0.5.3")),
+            "latest version in the 0.5 series"
+        );
+
+        // Version matching only pre-releases.
+        assert_eq!(
+            get_latest_matching_version(project, "0.6"),
+            None,
+            "0.6.0-alpha.1, being a pre-release, should not match 0.6.0"
+        );
+
+        // Version matching pre-release.
+        assert_eq!(
+            get_latest_matching_version(project, "0.6.0-alpha.1"),
+            Some(&version("0.6.0-alpha.1")),
+            "0.6.0-alpha.1 is a pre-release that matches this comparator"
+        );
+
+        // 0.5.2 is yanked.
+        assert_eq!(
+            get_latest_matching_version(project, "^0.5,<0.5.3"),
+            Some(&version("0.5.1")),
+            "0.5.2 is yanked so 0.5.1 should be returned"
+        );
+    }
+
+    fn get_latest_matching_version<'a>(
+        project: &'a MuktiProject,
+        version_req_str: &str,
+    ) -> Option<&'a Version> {
+        let version_req = VersionReq::parse(version_req_str).unwrap();
+        let (version, _) = project.get_latest_matching(&version_req)?;
+        Some(version)
     }
 }
