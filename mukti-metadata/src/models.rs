@@ -36,11 +36,10 @@ impl MuktiProject {
     /// Retrieve data for this exact version if found.
     ///
     /// Can include yanked or pre-release versions.
-    pub fn get_version_data(&self, version: &Version) -> Option<&ReleaseVersionData> {
+    pub fn get_version_data(&self, version: &Version) -> Option<(&Version, &ReleaseVersionData)> {
         // Ignore build metadata since it isn't relevant.
-        self.all_versions().find_map(|(v2, version_data)| {
-            eq_ignoring_build_metadata(version, v2).then(|| version_data)
-        })
+        self.all_versions()
+            .find(|&(v2, _)| eq_ignoring_build_metadata(version, v2))
     }
 
     /// Retrieve the latest version that matches this `VersionReq`.
@@ -266,9 +265,10 @@ mod tests {
         version_str: &str,
     ) -> &'a ReleaseVersionData {
         let version = version(version_str);
-        project
+        let (_, version_data) = project
             .get_version_data(&version)
-            .unwrap_or_else(|| panic!("no version data found for {version_str}"))
+            .unwrap_or_else(|| panic!("no version data found for {version_str}"));
+        version_data
     }
 
     #[test]
