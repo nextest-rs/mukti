@@ -9,7 +9,7 @@ rust-version = "1.59"
 
 [dependencies]
 serde = { version = "1.0.137", features = ["derive"] }
-semver = { version = "1.0.9", features = ["serde"] }
+semver = { version = "1.0.10", features = ["serde"] }
 thiserror = "1.0.31"
 
 [dev-dependencies]
