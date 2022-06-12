@@ -1,72 +1,103 @@
 {
-  "latest": "0.5",
-  "ranges": {
-    "0.5": {
-      "latest": "0.5.3",
-      "is_prerelease": false,
-      "versions": {
-        "0.5.3": {
-          "release_url": "https://github.com/sunshowers/mukti/releases/mukti-bin-0.5.3",
-          "status": "active",
-          "locations": [
-            {
-              "target": "x86_64-unknown-linux-gnu",
-              "format": "tar.gz",
-              "url": "https://github.com/sunshowers/mukti/releases/download/mukti-bin-0.5.3/mukti-bin-0.5.3-x86_64-unknown-linux-gnu.tar.gz"
-            },
-            {
-              "target": "x86_64-pc-windows-msvc",
-              "format": "tar.gz",
-              "url": "https://github.com/sunshowers/mukti/releases/download/mukti-bin-0.5.3/"
-            },
-            {
-              "target": "x86_64-pc-windows-msvc",
-              "format": "zip",
-              "url": "https://github.com/sunshowers/mukti/releases/download/mukti-bin-0.5.3/mukti-bin-0.5.3-x86_64-pc-windows-msvc.zip"
+  "projects": {
+    "mukti": {
+      "latest": "0.6",
+      "ranges": {
+        "0.6": {
+          "latest": "0.6.0",
+          "is_prerelease": false,
+          "versions": {
+            "0.6.0": {
+              "release_url": "https://github.com/nextest-rs/mukti/releases/mukti-bin-0.6.0",
+              "status": "active",
+              "locations": [
+                {
+                  "target": "x86_64-unknown-linux-gnu",
+                  "format": "tar.gz",
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.6.0/mukti-bin-0.6.0-x86_64-unknown-linux-gnu.tar.gz"
+                },
+                {
+                  "target": "x86_64-pc-windows-msvc",
+                  "format": "tar.gz",
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.6.0/"
+                },
+                {
+                  "target": "x86_64-pc-windows-msvc",
+                  "format": "zip",
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.6.0/mukti-bin-0.6.0-x86_64-pc-windows-msvc.zip"
+                }
+              ]
             }
-          ]
+          }
         },
-        "0.5.2": {
-          "release_url": "https://github.com/sunshowers/mukti/releases/mukti-bin-0.5.2",
-          "status": "active",
-          "locations": [
-            {
-              "target": "x86_64-unknown-linux-gnu",
-              "format": "tar.gz",
-              "url": "https://github.com/sunshowers/mukti/releases/download/mukti-bin-0.5.2/mukti-bin-0.5.2-x86_64-unknown-linux-gnu.tar.gz"
+        "0.5": {
+          "latest": "0.5.3",
+          "is_prerelease": false,
+          "versions": {
+            "0.5.3": {
+              "release_url": "https://github.com/nextest-rs/mukti/releases/mukti-bin-0.5.3",
+              "status": "active",
+              "locations": [
+                {
+                  "target": "x86_64-unknown-linux-gnu",
+                  "format": "tar.gz",
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/mukti-bin-0.5.3-x86_64-unknown-linux-gnu.tar.gz"
+                },
+                {
+                  "target": "x86_64-pc-windows-msvc",
+                  "format": "tar.gz",
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/"
+                },
+                {
+                  "target": "x86_64-pc-windows-msvc",
+                  "format": "zip",
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/mukti-bin-0.5.3-x86_64-pc-windows-msvc.zip"
+                }
+              ]
             },
-            {
-              "target": "x86_64-pc-windows-msvc",
-              "format": "tar.gz",
-              "url": "https://github.com/sunshowers/mukti/releases/download/mukti-bin-0.5.2/"
+            "0.5.2": {
+              "release_url": "https://github.com/nextest-rs/mukti/releases/mukti-bin-0.5.2",
+              "status": "active",
+              "locations": [
+                {
+                  "target": "x86_64-unknown-linux-gnu",
+                  "format": "tar.gz",
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.2/mukti-bin-0.5.2-x86_64-unknown-linux-gnu.tar.gz"
+                },
+                {
+                  "target": "x86_64-pc-windows-msvc",
+                  "format": "tar.gz",
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.2/"
+                },
+                {
+                  "target": "x86_64-pc-windows-msvc",
+                  "format": "zip",
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.2/mukti-bin-0.5.2-x86_64-pc-windows-msvc.zip"
+                }
+              ]
             },
-            {
-              "target": "x86_64-pc-windows-msvc",
-              "format": "zip",
-              "url": "https://github.com/sunshowers/mukti/releases/download/mukti-bin-0.5.2/mukti-bin-0.5.2-x86_64-pc-windows-msvc.zip"
+            "0.5.1": {
+              "release_url": "https://github.com/nextest-rs/mukti/releases/mukti-bin-0.5.1",
+              "status": "active",
+              "locations": [
+                {
+                  "target": "x86_64-unknown-linux-gnu",
+                  "format": "tar.gz",
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.1/mukti-bin-0.5.1-x86_64-unknown-linux-gnu.tar.gz"
+                },
+                {
+                  "target": "x86_64-pc-windows-msvc",
+                  "format": "tar.gz",
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.1/"
+                },
+                {
+                  "target": "x86_64-pc-windows-msvc",
+                  "format": "zip",
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.1/mukti-bin-0.5.1-x86_64-pc-windows-msvc.zip"
+                }
+              ]
             }
-          ]
-        },
-        "0.5.1": {
-          "release_url": "https://github.com/sunshowers/mukti/releases/mukti-bin-0.5.1",
-          "status": "active",
-          "locations": [
-            {
-              "target": "x86_64-unknown-linux-gnu",
-              "format": "tar.gz",
-              "url": "https://github.com/sunshowers/mukti/releases/download/mukti-bin-0.5.1/mukti-bin-0.5.1-x86_64-unknown-linux-gnu.tar.gz"
-            },
-            {
-              "target": "x86_64-pc-windows-msvc",
-              "format": "tar.gz",
-              "url": "https://github.com/sunshowers/mukti/releases/download/mukti-bin-0.5.1/"
-            },
-            {
-              "target": "x86_64-pc-windows-msvc",
-              "format": "zip",
-              "url": "https://github.com/sunshowers/mukti/releases/download/mukti-bin-0.5.1/mukti-bin-0.5.1-x86_64-pc-windows-msvc.zip"
-            }
-          ]
+          }
         }
       }
     }
