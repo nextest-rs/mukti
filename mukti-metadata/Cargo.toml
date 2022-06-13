@@ -1,11 +1,14 @@
 [package]
 name = "mukti-metadata"
-description = "Metadata for mukti"
+description = "Metadata for mukti release manager"
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/nextest-rs/nextest"
+repository = "https://github.com/nextest-rs/mukti"
+documentation = "https://docs.rs/mukti-metadata"
+keywords = ["mukti"]
 rust-version = "1.59"
+readme = "README.md"
 
 [dependencies]
 serde = { version = "1.0.137", features = ["derive"] }

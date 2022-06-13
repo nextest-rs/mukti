@@ -1,12 +1,28 @@
 # adapted from https://github.com/taiki-e/cargo-hack/blob/main/.github/workflows/release.yml
 
-name: Release binaries
+name: Publish releases
 on:
   push:
     tags:
       - '*'
 
 jobs:
+  mukti-metadata-release:
+    if: github.repository_owner == 'nextest-rs' && startsWith(github.ref_name, 'mukti-metadata-')
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+      - uses: taiki-e/create-gh-release-action@v1
+        with:
+          prefix: mukti-metadata
+          changelog: mukti-metadata/CHANGELOG.md
+          title: $prefix $version
+          branch: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   create-mukti-bin-release:
     if: github.repository_owner == 'nextest-rs' && startsWith(github.ref_name, 'mukti-bin-')
     runs-on: ubuntu-18.04
