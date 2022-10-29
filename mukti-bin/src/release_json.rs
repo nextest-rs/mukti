@@ -114,7 +114,7 @@ pub(crate) fn update_release_json(
     let latest_range = project
         .ranges
         .iter()
-        .filter_map(|(range, data)| (!data.is_prerelease).then(|| *range))
+        .filter_map(|(range, data)| (!data.is_prerelease).then_some(*range))
         .max();
     project.latest = latest_range;
 
