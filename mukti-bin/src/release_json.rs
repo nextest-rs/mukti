@@ -101,8 +101,7 @@ pub(crate) fn update_release_json(
                 data.latest = data
                     .versions
                     .keys()
-                    .rev()
-                    .next()
+                    .next_back()
                     .expect("we just added a release so this can't be empty")
                     .clone();
                 data.is_prerelease = true;
