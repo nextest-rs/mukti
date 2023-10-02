@@ -12,7 +12,7 @@ readme = "README.md"
 
 [dependencies]
 serde = { version = "1.0.147", features = ["derive"] }
-semver = { version = "1.0.14", features = ["serde"] }
+semver = { version = "1.0.19", features = ["serde"] }
 thiserror = "1.0.37"
 
 [dev-dependencies]
