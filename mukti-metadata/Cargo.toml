@@ -11,7 +11,7 @@ rust-version = "1.59"
 readme = "README.md"
 
 [dependencies]
-serde = { version = "1.0.188", features = ["derive"] }
+serde = { version = "1.0.189", features = ["derive"] }
 semver = { version = "1.0.20", features = ["serde"] }
 thiserror = "1.0.49"
 
