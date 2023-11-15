@@ -36,7 +36,7 @@ jobs:
 
   create-mukti-bin-release:
     if: github.repository_owner == 'nextest-rs' && startsWith(github.ref_name, 'mukti-bin-')
-    runs-on: ubuntu-18.04 # TODO: use ubuntu-latest + a musl build or cargo-zigbuild
+    runs-on: ubuntu-22.04 # TODO: use ubuntu-latest + a musl build or cargo-zigbuild
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         with:
