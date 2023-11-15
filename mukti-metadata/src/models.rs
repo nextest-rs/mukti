@@ -75,6 +75,10 @@ pub struct ReleaseVersionData {
 
     /// Release locations
     pub locations: Vec<ReleaseLocation>,
+
+    /// Custom domain-specific information stored about this release.
+    #[serde(default)]
+    pub metadata: serde_json::Value,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]

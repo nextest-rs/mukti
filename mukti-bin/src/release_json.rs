@@ -82,6 +82,7 @@ pub(crate) fn update_release_json(
                 release_url: release_url.to_owned(),
                 status: ReleaseStatus::Active,
                 locations,
+                metadata: serde_json::Value::Null,
             },
         );
 
