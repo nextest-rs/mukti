@@ -36,7 +36,7 @@ jobs:
 
   create-mukti-bin-release:
     if: github.repository_owner == 'nextest-rs' && startsWith(github.ref_name, 'mukti-bin-')
-    runs-on: ubuntu-18.04 # TODO: use ubuntu-latest + a musl build or cargo-zigbuild
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         with:
@@ -54,7 +54,7 @@ jobs:
           TAG_NAME=${{ github.ref_name }}
           VERSION=${TAG_NAME#"mukti-bin-"}
           echo "The version number is $VERSION"
-          echo "::set-output name=version::$VERSION"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
     outputs:
       version: ${{ steps.get-version-number.outputs.version }}
 
@@ -66,8 +66,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-18.04
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
           - target: x86_64-pc-windows-msvc
             os: windows-latest
     runs-on: ${{ matrix.os }}
@@ -93,12 +93,13 @@ jobs:
         shell: bash
         run: |
           if [[ ${{ matrix.target }} == "x86_64-pc-windows-msvc" ]]; then
-            echo "::set-output name=${{ matrix.target }}-zip::${{ github.ref_name }}-${{ matrix.target }}.zip"
+            echo "${{ matrix.target }}-tar=${{ github.ref_name }}-${{ matrix.target }}".tar.gz >> $GITHUB_OUTPUT
+            echo "${{ matrix.target }}-zip=${{ github.ref_name }}-${{ matrix.target }}".zip >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=${{ matrix.target }}-tar-gz::${{ github.ref_name }}-${{ matrix.target }}.tar.gz"
+            echo "${{ matrix.target }}-tar=${{ github.ref_name }}-${{ matrix.target }}".tar.gz >> $GITHUB_OUTPUT
           fi
     outputs:
-      linux-tar-gz: ${{ steps.archive-output.outputs.x86_64-unknown-linux-gnu-tar-gz }}
+      linux-tar-gz: ${{ steps.archive-output.outputs.x86_64-unknown-linux-musl-tar-gz }}
       windows-tar-gz: ${{ steps.archive-output.outputs.x86_64-pc-windows-msvc-tar-gz }}
       windows-zip: ${{ steps.archive-output.outputs.x86_64-pc-windows-msvc-zip }}
 
@@ -120,13 +121,13 @@ jobs:
           ~/bin/mukti-bin add-release --version ${{ needs.create-mukti-bin-release.outputs.version }} \
             --release-url "https://github.com/nextest-rs/mukti/releases/${{ github.ref_name }}" \
             --archive-prefix "$ARCHIVE_PREFIX" \
-            --archive x86_64-unknown-linux-gnu:tar.gz=${{ needs.upload-mukti-bin-assets.outputs.linux-tar-gz }} \
+            --archive x86_64-unknown-linux-musl:tar.gz=${{ needs.upload-mukti-bin-assets.outputs.linux-tar-gz }} \
             --archive x86_64-pc-windows-msvc:tar.gz=${{ needs.upload-mukti-bin-assets.outputs.windows-tar-gz }} \
             --archive x86_64-pc-windows-msvc:zip=${{ needs.upload-mukti-bin-assets.outputs.windows-zip }}
       - name: Generate netlify redirects
         run: |
           mkdir out-dir
-          ~/bin/mukti-bin generate-netlify out-dir --alias linux=x86_64-unknown-linux-gnu:tar.gz --alias windows=x86_64-pc-windows-msvc:zip
+          ~/bin/mukti-bin generate-netlify out-dir --alias linux=x86_64-unknown-linux-musl:tar.gz --alias windows=x86_64-pc-windows-msvc:zip
       - name: Update releases.json on main branch
         uses: EndBug/add-and-commit@72e246094f1af94def5a07467cd789c503ae8be0 # v8
         with:
