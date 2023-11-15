@@ -10,7 +10,7 @@ git checkout -B to-release
 
 # --execute: actually does the release
 # --no-confirm: don't ask for confirmation, since this is a non-interactive script
-cargo release publish --publish --no-confirm --workspace "$@"
+cargo release publish --publish --execute --no-confirm --workspace "$@"
 
 git checkout -
 git branch -D to-release
