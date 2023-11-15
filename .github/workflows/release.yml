@@ -99,8 +99,8 @@ jobs:
             echo "${{ matrix.target }}-tar=${{ github.ref_name }}-${{ matrix.target }}".tar.gz >> $GITHUB_OUTPUT
           fi
     outputs:
-      linux-tar-gz: ${{ steps.archive-output.outputs.x86_64-unknown-linux-musl-tar-gz }}
-      windows-tar-gz: ${{ steps.archive-output.outputs.x86_64-pc-windows-msvc-tar-gz }}
+      linux-tar-gz: ${{ steps.archive-output.outputs.x86_64-unknown-linux-musl-tar }}
+      windows-tar-gz: ${{ steps.archive-output.outputs.x86_64-pc-windows-msvc-tar }}
       windows-zip: ${{ steps.archive-output.outputs.x86_64-pc-windows-msvc-zip }}
 
   update-mukti-bin-release-meta:
