@@ -10,6 +10,6 @@ atomicwrites = "0.4.3"
 camino = "1.1.6"
 clap = { version = "3.2.25", features = ["derive"] }
 color-eyre = { version = "0.6.2", default-features = false }
-serde_json = "1.0.109"
+serde_json = "1.0.110"
 semver = "1.0.20"
 mukti-metadata = { path = "../mukti-metadata" }
