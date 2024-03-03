@@ -15,13 +15,9 @@ jobs:
         with:
           persist-credentials: false
       - name: Install cargo release
-        uses: baptiste0928/cargo-install@2cfb0024938d23011106cbf127b393bc83fddba1 # v1
+        uses: taiki-e/install-action@c6ffb5827ec9fecafc811f72ec5d7854680dc6ca # v2
         with:
-          crate: cargo-release
-          # Version 0.21.4 has the idempotency behavior we want, until
-          # https://github.com/crate-ci/cargo-release/issues/594 is addressed.
-          version: =0.21.4
-          locked: true
+          tool: cargo-release@0.25.0
       - uses: taiki-e/create-gh-release-action@8df4de6534ceacdaed10a08f73418ca751f31793 # v1
         with:
           prefix: mukti-metadata
@@ -127,7 +123,7 @@ jobs:
       - name: Generate netlify redirects
         run: |
           mkdir out-dir
-          ~/bin/mukti-bin generate-netlify out-dir --alias linux=x86_64-unknown-linux-musl:tar.gz --alias windows=x86_64-pc-windows-msvc:zip
+          ~/bin/mukti-bin generate-redirects --flavor cloudflare out-dir --alias linux=x86_64-unknown-linux-musl:tar.gz --alias windows=x86_64-pc-windows-msvc:zip
       - name: Update releases.json on main branch
         uses: EndBug/add-and-commit@72e246094f1af94def5a07467cd789c503ae8be0 # v8
         with:
