@@ -3,7 +3,7 @@
 
 mod command;
 mod errors;
-mod netlify_toml;
+mod redirects;
 mod release_json;
 
 pub use command::MuktiApp;

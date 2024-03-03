@@ -117,7 +117,7 @@ where
 }
 
 /// Represents a range of versions
-#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub enum VersionRange {
     Patch(u64),
     Minor(u64),
@@ -136,7 +136,7 @@ impl VersionRange {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub enum VersionRangeKind {
     /// Patch version.
     Patch,

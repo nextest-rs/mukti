@@ -3,7 +3,7 @@
 
 use crate::{
     errors::NameValueParseError,
-    netlify_toml::generate_netlify_redirects,
+    redirects::{generate_redirects, RedirectFlavor},
     release_json::{read_release_json, update_release_json},
 };
 use camino::Utf8PathBuf;
@@ -44,15 +44,19 @@ enum MuktiCommand {
         #[clap(long = "archive", value_name = "TARGET:FORMAT=NAME")]
         archives: Vec<Archive>,
     },
-    /// Generate a netlify _redirects file from the release JSON
-    GenerateNetlify {
+    /// Generate a _redirects file from the release JSON
+    GenerateRedirects {
         /// Aliases to use.
         #[clap(long = "alias", value_name = "ALIAS=TARGET:FORMAT")]
         aliases: Vec<Alias>,
 
-        /// Prefix for URLs
+        /// The flavor of redirects to generate.
+        #[clap(long, short, value_enum)]
+        flavor: RedirectFlavor,
+
+        /// Prefix for URLs.
         #[clap(long, default_value = "/")]
-        netlify_prefix: String,
+        prefix: String,
 
         /// Output directory.
         out_dir: Utf8PathBuf,
@@ -78,13 +82,14 @@ impl MuktiApp {
                     &self.json,
                 )?;
             }
-            MuktiCommand::GenerateNetlify {
+            MuktiCommand::GenerateRedirects {
                 aliases,
-                netlify_prefix,
+                flavor,
+                prefix,
                 out_dir,
             } => {
                 let release_json = read_release_json(&self.json, false)?;
-                generate_netlify_redirects(&release_json, &aliases, &netlify_prefix, &out_dir)?;
+                generate_redirects(&release_json, &aliases, flavor, &prefix, &out_dir)?;
             }
         }
 
