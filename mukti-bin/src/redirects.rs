@@ -63,8 +63,6 @@ pub(crate) fn generate_redirects(
         );
     }
 
-    println!("first redirects: {:#?}", redirects);
-
     for (range, data) in &project.ranges {
         if !data.is_prerelease {
             let version_data = &data.versions[&data.latest];
@@ -158,9 +156,6 @@ impl<'a> WildcardStore<'a> {
                 .or_default()
                 .push(redirect);
         }
-
-        println!("url_matches: {:#?}", url_matches);
-        println!("unmatched: {:#?}", unmatched);
 
         // For each from key, look through all the to keys and find the most common one.
         let mut wildcards = Vec::new();
