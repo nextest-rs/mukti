@@ -113,6 +113,7 @@ jobs:
         with:
           repository: nextest-rs/mukti-release-meta
           ref: main
+          token: ${{ secrets.RELEASE_META_DEPLOY_TOKEN }}
       - name: Fetch mukti assets
         run: |
           ARCHIVE_PREFIX="https://github.com/nextest-rs/mukti/releases/download/${{ github.ref_name }}"
@@ -130,12 +131,15 @@ jobs:
       - name: Generate redirects
         run: |
           ~/bin/mukti-bin --json releases.json generate-redirects --flavor cloudflare . \
-            --alias linux=x86_64-unknown-linux-musl:tar.gz
+            --alias linux=x86_64-unknown-linux-musl:tar.gz \
             --alias windows=x86_64-pc-windows-msvc:zip
       - name: Update releases.json on main branch
-        run:
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions"
+        # The first line is required to ensure that our custom PAT is passed in as the auth token.
+        # See: https://stackoverflow.com/q/64374179
+        run: |
+          git config --unset-all http.https://github.com/.extraheader
+          git config user.email "bot@nexte.st"
+          git config user.name "Nextest Bot"
           git pull --autostash --rebase origin main
           git add releases.json _redirects
           git commit -m "Update release metadata for ${{ github.ref_name }}"
