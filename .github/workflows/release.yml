@@ -114,13 +114,12 @@ jobs:
           repository: nextest-rs/mukti-release-meta
           ref: main
           token: ${{ secrets.RELEASE_META_DEPLOY_TOKEN }}
-      - name: Fetch mukti assets
+      - name: Add release to releases.json
         run: |
           ARCHIVE_PREFIX="https://github.com/nextest-rs/mukti/releases/download/${{ github.ref_name }}"
           mkdir -p ~/bin
           curl -LsSf "$ARCHIVE_PREFIX/${{ needs.upload-mukti-bin-assets.outputs.linux-tar-gz }}" | tar xzf - -C ~/bin
-      - name: Add release to releases.json
-        run: |
+
           ~/bin/mukti-bin --json releases.json add-release \
             --version ${{ needs.create-mukti-bin-release.outputs.version }} \
             --release-url "https://github.com/nextest-rs/mukti/releases/${{ github.ref_name }}" \
