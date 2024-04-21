@@ -14,4 +14,4 @@ readme = "README.md"
 serde = { version = "1.0.198", features = ["derive"] }
 serde_json = "1"
 semver = { version = "1.0.22", features = ["serde"] }
-thiserror = "1.0.58"
+thiserror = "1.0.59"
