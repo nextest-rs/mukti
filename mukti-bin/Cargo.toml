@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 atomicwrites = "0.4.3"
-camino = "1.1.7"
+camino = "1.1.8"
 clap = { version = "3.2.25", features = ["derive"] }
 color-eyre = { version = "0.6.3", default-features = false }
 serde_json = "1.0.125"
