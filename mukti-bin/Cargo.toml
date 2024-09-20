@@ -6,7 +6,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-atomicwrites = "0.4.3"
+atomicwrites = "0.4.4"
 camino = "1.1.9"
 clap = { version = "3.2.25", features = ["derive"] }
 color-eyre = { version = "0.6.3", default-features = false }
