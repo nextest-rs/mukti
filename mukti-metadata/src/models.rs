@@ -4,7 +4,7 @@
 use crate::VersionRangeParseError;
 use semver::{Version, VersionReq};
 use serde::{de::Visitor, ser::SerializeMap, Deserialize, Serialize, Serializer};
-use std::{collections::BTreeMap, fmt, str::FromStr};
+use std::{borrow::Cow, collections::BTreeMap, fmt, str::FromStr};
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct MuktiReleasesJson {
@@ -101,7 +101,38 @@ pub struct ReleaseLocation {
 
     /// The URL the target can be downloaded at
     pub url: String,
+
+    /// The checksums for the target as a map of algorithm to checksum. This is
+    /// left open-ended to allow for new checksum algorithms to be added in the
+    /// future.
+    #[serde(default)]
+    pub checksums: BTreeMap<DigestAlgorithm, Digest>,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(transparent)]
+pub struct DigestAlgorithm(Cow<'static, str>);
+
+impl DigestAlgorithm {
+    /// The SHA-256 checksum algorithm.
+    pub const SHA256: Self = Self(Cow::Borrowed("sha256"));
+
+    /// The BLAKE2b-512 checksum algorithm.
+    pub const BLAKE2B: Self = Self(Cow::Borrowed("blake2b"));
+
+    pub const fn new_static(algorithm: &'static str) -> Self {
+        Self(Cow::Borrowed(algorithm))
+    }
+
+    pub fn new(algorithm: String) -> Self {
+        Self(Cow::Owned(algorithm))
+    }
+}
+
+/// A digest, typically encoded as a hex string.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(transparent)]
+pub struct Digest(pub String);
 
 fn serialize_reverse<S, K, V>(map: &BTreeMap<K, V>, serializer: S) -> Result<S::Ok, S::Error>
 where

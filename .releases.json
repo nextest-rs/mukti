@@ -14,17 +14,29 @@
                 {
                   "target": "x86_64-unknown-linux-musl",
                   "format": "tar.gz",
-                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.6.2/mukti-bin-0.6.2-x86_64-unknown-linux-musl.tar.gz"
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.6.2/mukti-bin-0.6.2-x86_64-unknown-linux-musl.tar.gz",
+                  "checksums": {
+                    "blake2b": "644f1c1789414c8d16318cef4370d87488062d3403b6b55eb564e825ddbdeca4c7777754e4950740f958a05821dc46c60743467a83d76a38089fb493c4d8365e",
+                    "sha256": "f110410823f847ca58d7cdae1be1943d356ca6125acbdd34842b35edde51777b"
+                  }
                 },
                 {
                   "target": "x86_64-pc-windows-msvc",
                   "format": "tar.gz",
-                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.6.2/mukti-bin-0.6.2-x86_64-pc-windows-msvc.tar.gz"
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.6.2/mukti-bin-0.6.2-x86_64-pc-windows-msvc.tar.gz",
+                  "checksums": {
+                    "blake2b": "adb4ede3ff862d98712a701f18c41f396e1da4c718e6b2dbbc0ce262434c34fc5b0c138532c859665085d8285c124bd62e3b477b6966456aff674962325b8399",
+                    "sha256": "531bb0410cb23cd7391eaeb7f330d69c8e71b680704e14932aad0df060c22a07"
+                  }
                 },
                 {
                   "target": "x86_64-pc-windows-msvc",
                   "format": "zip",
-                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.6.2/mukti-bin-0.6.2-x86_64-pc-windows-msvc.zip"
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.6.2/mukti-bin-0.6.2-x86_64-pc-windows-msvc.zip",
+                  "checksums": {
+                    "blake2b": "250dc6ae57e0b3997f4dceffa4e7330a27754af4593b275b5672fd9e58aabbe9bd1c584531bedd80b5c5c67140106b7be830b72ce54babec3424b0c3d41204bb",
+                    "sha256": "1cec9d3cd8d04473ad4d2243800aa65e70e9927ce55ff6e6b8a1b50bbd6a00f4"
+                  }
                 }
               ],
               "metadata": null
@@ -42,17 +54,29 @@
                 {
                   "target": "x86_64-unknown-linux-gnu",
                   "format": "tar.gz",
-                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/mukti-bin-0.5.3-x86_64-unknown-linux-gnu.tar.gz"
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/mukti-bin-0.5.3-x86_64-unknown-linux-gnu.tar.gz",
+                  "checksums": {
+                    "blake2b": "b22d248db6c48e9df24e109bb813b61e4948530fe01def7cbee92b9f5390086749d178115e113ddb3bbbaf9d46be501c65370909f6646ee2c05dd86c002cea66",
+                    "sha256": "23096b17c14d5e1034d3a5fb6ebe2ad7bbfbfa6b9afb922958caec2081576036"
+                  }
                 },
                 {
                   "target": "x86_64-pc-windows-msvc",
                   "format": "tar.gz",
-                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/"
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/",
+                  "checksums": {
+                    "blake2b": "e354d13abfe76cdfbbba34d4c6697cb031eafd04079bde38c4dd521f0b8f0b0f61b9721e1c131f4eb4627476e00e0ef9f5816366a75250bcc74414f7efa2f493",
+                    "sha256": "0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5"
+                  }
                 },
                 {
                   "target": "x86_64-pc-windows-msvc",
                   "format": "zip",
-                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/mukti-bin-0.5.3-x86_64-pc-windows-msvc.zip"
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/mukti-bin-0.5.3-x86_64-pc-windows-msvc.zip",
+                  "checksums": {
+                    "blake2b": "dda5ad05743bc7e4b768aa5f4dec5f5f554b45b3c7563fb66f3ce819715b48ea90a6424197f83e21ea346c4d8b6abfbb6dce1e65d4016a75052037c248becf56",
+                    "sha256": "563216e31105ef2e2046c5a75225cb7514498fd96a0c92403cd50c2375d88876"
+                  }
                 }
               ],
               "metadata": null
@@ -64,17 +88,29 @@
                 {
                   "target": "x86_64-unknown-linux-gnu",
                   "format": "tar.gz",
-                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.2/mukti-bin-0.5.2-x86_64-unknown-linux-gnu.tar.gz"
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.2/mukti-bin-0.5.2-x86_64-unknown-linux-gnu.tar.gz",
+                  "checksums": {
+                    "blake2b": "070420428f5f345625d3fdfd995ecf63e5f6169c3e0cacff69bcf3a3b680d5d060b61e3ebc21f66383158f641438abd32849b0996ecd01dc62ca589cbfacfb7e",
+                    "sha256": "f048fe204dac7a16a40df63a3a342e0dc5875499fbbde0ba5d985aaaeb570153"
+                  }
                 },
                 {
                   "target": "x86_64-pc-windows-msvc",
                   "format": "tar.gz",
-                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.2/"
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.2/",
+                  "checksums": {
+                    "blake2b": "e354d13abfe76cdfbbba34d4c6697cb031eafd04079bde38c4dd521f0b8f0b0f61b9721e1c131f4eb4627476e00e0ef9f5816366a75250bcc74414f7efa2f493",
+                    "sha256": "0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5"
+                  }
                 },
                 {
                   "target": "x86_64-pc-windows-msvc",
                   "format": "zip",
-                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.2/mukti-bin-0.5.2-x86_64-pc-windows-msvc.zip"
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.2/mukti-bin-0.5.2-x86_64-pc-windows-msvc.zip",
+                  "checksums": {
+                    "blake2b": "a553f32474d0824e9369833a8e6dc44080585dab9f42983013c53f7ba76191a0ae62ccc44b5c3a9619105574b9254715165080863c7950381b8fbe0431f3667e",
+                    "sha256": "fe7db54350d46298647de483ce61fca4deaa913a32aef360331c8f029cd10bfc"
+                  }
                 }
               ],
               "metadata": null
@@ -86,17 +122,29 @@
                 {
                   "target": "x86_64-unknown-linux-gnu",
                   "format": "tar.gz",
-                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.1/mukti-bin-0.5.1-x86_64-unknown-linux-gnu.tar.gz"
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.1/mukti-bin-0.5.1-x86_64-unknown-linux-gnu.tar.gz",
+                  "checksums": {
+                    "blake2b": "0dc39bcc1a96ef2336412137ad851124893f77603886fa5bbcc507e5492b20ae6a4e2107cfe8830f51d163c692fb4787632169d7fc1e3f69619a1073de1dc05f",
+                    "sha256": "cbb9a3a473b718383595122489605193aca1a58f91e81230776067f43806a7ae"
+                  }
                 },
                 {
                   "target": "x86_64-pc-windows-msvc",
                   "format": "tar.gz",
-                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.1/"
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.1/",
+                  "checksums": {
+                    "blake2b": "e354d13abfe76cdfbbba34d4c6697cb031eafd04079bde38c4dd521f0b8f0b0f61b9721e1c131f4eb4627476e00e0ef9f5816366a75250bcc74414f7efa2f493",
+                    "sha256": "0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5"
+                  }
                 },
                 {
                   "target": "x86_64-pc-windows-msvc",
                   "format": "zip",
-                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.1/mukti-bin-0.5.1-x86_64-pc-windows-msvc.zip"
+                  "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.1/mukti-bin-0.5.1-x86_64-pc-windows-msvc.zip",
+                  "checksums": {
+                    "blake2b": "96d8450799add0f2b0b40e69c17542eb60e7a7b21bff6f96a96338eaa734241c6b000dc331dbd57ed36f6dcb58b7998cc5550ff5bd483b53ba1803b92ed800e1",
+                    "sha256": "1f5e699a73f668a1a174d1d2e39afa0593080c4cdd95e1e10931a4fa8250d0a2"
+                  }
                 }
               ],
               "metadata": null

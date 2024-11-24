@@ -7,8 +7,9 @@ use clap::Parser;
 use color_eyre::Result;
 use mukti_bin::MuktiApp;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     color_eyre::install()?;
     let app = MuktiApp::parse();
-    app.exec()
+    app.exec().await
 }

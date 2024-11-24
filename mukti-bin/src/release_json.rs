@@ -74,6 +74,8 @@ pub(crate) fn update_release_json(
                 target: archive.target_format.target.clone(),
                 format: archive.target_format.format.clone(),
                 url: format!("{}/{}", archive_prefix, archive.name),
+                // TODO checksums
+                checksums: BTreeMap::new(),
             })
             .collect();
         data.versions.insert(
@@ -118,6 +120,12 @@ pub(crate) fn update_release_json(
         .max();
     project.latest = latest_range;
 
+    write_releases_json(release_json, path)?;
+
+    Ok(())
+}
+
+pub(crate) fn write_releases_json(release_json: &MuktiReleasesJson, path: &Utf8Path) -> Result<()> {
     let file = AtomicFile::new(path, OverwriteBehavior::AllowOverwrite);
     file.write(|f| serde_json::to_writer_pretty(BufWriter::new(f), &release_json))
         .wrap_err_with(|| format!("failed to serialize releases JSON to {}", path))?;

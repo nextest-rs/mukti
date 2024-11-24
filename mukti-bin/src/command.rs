@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{
+    checksums::backfill_checksums,
     errors::NameValueParseError,
     redirects::{generate_redirects, RedirectFlavor},
-    release_json::{read_release_json, update_release_json},
+    release_json::{read_release_json, update_release_json, write_releases_json},
 };
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand};
@@ -61,10 +62,16 @@ enum MuktiCommand {
         /// Output directory.
         out_dir: Utf8PathBuf,
     },
+    /// Add checksums to the release JSON
+    BackfillChecksums {
+        /// Number of files to download in parallel.
+        #[clap(long, short, default_value = "8")]
+        jobs: usize,
+    },
 }
 
 impl MuktiApp {
-    pub fn exec(self) -> Result<()> {
+    pub async fn exec(self) -> Result<()> {
         match self.command {
             MuktiCommand::AddRelease {
                 release_url,
@@ -90,6 +97,11 @@ impl MuktiApp {
             } => {
                 let release_json = read_release_json(&self.json, false)?;
                 generate_redirects(&release_json, &aliases, flavor, &prefix, &out_dir)?;
+            }
+            MuktiCommand::BackfillChecksums { jobs } => {
+                let mut release_json = read_release_json(&self.json, false)?;
+                backfill_checksums(&mut release_json, jobs).await;
+                write_releases_json(&release_json, &self.json)?;
             }
         }
 
