@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 use blake2::Blake2b;
 use bytes::Bytes;
-use futures::stream::StreamExt;
+use futures_util::stream::StreamExt;
 use mukti_metadata::{Digest, DigestAlgorithm, MuktiReleasesJson, ReleaseLocation};
 use sha2::{Digest as _, Sha256};
 use tokio::task::JoinHandle;
@@ -30,7 +30,7 @@ pub(crate) async fn backfill_checksums(release_json: &mut MuktiReleasesJson, job
                 }
             });
 
-        let mut stream = futures::stream::iter(fetch_tasks).buffer_unordered(jobs);
+        let mut stream = futures_util::stream::iter(fetch_tasks).buffer_unordered(jobs);
         let mut results = BTreeMap::new();
 
         let mut succeeded = 0;
