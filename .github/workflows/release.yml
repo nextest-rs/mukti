@@ -82,7 +82,7 @@ jobs:
           target: ${{ matrix.target }}
           tar: all
           zip: windows
-          checksum: b2, sha256
+          checksum: b2,sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Set archive output variable
