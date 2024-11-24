@@ -109,7 +109,7 @@ impl MuktiApp {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct Archive {
     pub(crate) target_format: TargetFormat,
     pub(crate) name: String,
@@ -128,7 +128,7 @@ impl FromStr for Archive {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct Alias {
     pub(crate) alias: String,
     pub(crate) target_format: TargetFormat,
@@ -147,7 +147,7 @@ impl FromStr for Alias {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct TargetFormat {
     pub(crate) target: String,
     pub(crate) format: String,
