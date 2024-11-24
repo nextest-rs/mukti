@@ -11,15 +11,10 @@ use sha2::{Digest as _, Sha256};
 use tokio::task::JoinHandle;
 
 pub(crate) async fn backfill_checksums(release_json: &mut MuktiReleasesJson, jobs: usize) {
-    let location_count = all_locations(release_json).count();
+    let location_count = all_locations_without_checksums(release_json).count();
 
     let results = {
-        let fetch_tasks = all_locations(release_json)
-            .filter(|location| {
-                // Do all the checksums we want exist?
-                !(location.checksums.contains_key(&DigestAlgorithm::SHA256)
-                    && location.checksums.contains_key(&DigestAlgorithm::BLAKE2B))
-            })
+        let fetch_tasks = all_locations_without_checksums(release_json)
             .cloned()
             .map(|location| {
                 // Note this is in an async block, which ensures that the task is only
@@ -74,6 +69,15 @@ pub(crate) async fn backfill_checksums(release_json: &mut MuktiReleasesJson, job
             }
         }
     }
+}
+
+fn all_locations_without_checksums(
+    release_json: &MuktiReleasesJson,
+) -> impl Iterator<Item = &ReleaseLocation> {
+    all_locations(release_json).filter(|location| {
+        !(location.checksums.contains_key(&DigestAlgorithm::SHA256)
+            && location.checksums.contains_key(&DigestAlgorithm::BLAKE2B))
+    })
 }
 
 fn all_locations(release_json: &MuktiReleasesJson) -> impl Iterator<Item = &ReleaseLocation> {
