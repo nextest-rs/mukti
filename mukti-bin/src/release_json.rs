@@ -3,7 +3,7 @@
 
 //! Add and update to release JSON.
 
-use crate::command::Archive;
+use crate::checksums::ArchiveWithChecksums;
 use atomicwrites::{AtomicFile, OverwriteBehavior};
 use camino::Utf8Path;
 use color_eyre::eyre::{bail, Result, WrapErr};
@@ -33,9 +33,8 @@ pub(crate) fn read_release_json(path: &Utf8Path, allow_missing: bool) -> Result<
 pub(crate) fn update_release_json(
     release_json: &mut MuktiReleasesJson,
     release_url: &str,
-    archive_prefix: &str,
     version: &Version,
-    archives: &[Archive],
+    archives: Vec<ArchiveWithChecksums>,
     path: &Utf8Path,
 ) -> Result<()> {
     if archives.is_empty() {
@@ -69,13 +68,25 @@ pub(crate) fn update_release_json(
             });
 
         let locations: Vec<_> = archives
-            .iter()
-            .map(|archive| ReleaseLocation {
-                target: archive.target_format.target.clone(),
-                format: archive.target_format.format.clone(),
-                url: format!("{}/{}", archive_prefix, archive.name),
-                // TODO checksums
-                checksums: BTreeMap::new(),
+            .into_iter()
+            .map(|archive| {
+                let checksums = match archive.checksums {
+                    Ok(checksums) => checksums.to_checksum_map(),
+                    Err(e) => {
+                        eprintln!(
+                            "failed to compute checksums for {}: {}",
+                            archive.archive.name, e
+                        );
+                        BTreeMap::new()
+                    }
+                };
+
+                ReleaseLocation {
+                    target: archive.archive.target_format.target.clone(),
+                    format: archive.archive.target_format.format.clone(),
+                    url: archive.url,
+                    checksums,
+                }
             })
             .collect();
         data.versions.insert(

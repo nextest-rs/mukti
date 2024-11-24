@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{
-    checksums::backfill_checksums,
+    checksums::{backfill_checksums, fetch_release_checksums},
     errors::NameValueParseError,
     redirects::{generate_redirects, RedirectFlavor},
     release_json::{read_release_json, update_release_json, write_releases_json},
@@ -44,6 +44,10 @@ enum MuktiCommand {
         /// Archive names.
         #[clap(long = "archive", value_name = "TARGET:FORMAT=NAME")]
         archives: Vec<Archive>,
+
+        /// Number of release files to download in parallel.
+        #[clap(long, short, default_value = "8")]
+        jobs: usize,
     },
     /// Generate a _redirects file from the release JSON
     GenerateRedirects {
@@ -64,7 +68,7 @@ enum MuktiCommand {
     },
     /// Add checksums to the release JSON
     BackfillChecksums {
-        /// Number of files to download in parallel.
+        /// Number of release files to download in parallel.
         #[clap(long, short, default_value = "8")]
         jobs: usize,
     },
@@ -78,14 +82,17 @@ impl MuktiApp {
                 archive_prefix,
                 version,
                 archives,
+                jobs,
             } => {
                 let mut release_json = read_release_json(&self.json, true)?;
+
+                let archives = fetch_release_checksums(&archive_prefix, archives, jobs).await;
+
                 update_release_json(
                     &mut release_json,
                     &release_url,
-                    &archive_prefix,
                     &version,
-                    &archives,
+                    archives,
                     &self.json,
                 )?;
             }
