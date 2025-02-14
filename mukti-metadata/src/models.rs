@@ -236,7 +236,7 @@ impl<'de> Deserialize<'de> for VersionRange {
 
 struct VersionRangeDeVisitor;
 
-impl<'de> Visitor<'de> for VersionRangeDeVisitor {
+impl Visitor<'_> for VersionRangeDeVisitor {
     type Value = VersionRange;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

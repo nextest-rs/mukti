@@ -222,11 +222,11 @@ struct Wildcard<'a> {
     matching_redirects: Vec<&'a Redirect>,
 }
 
-impl<'a> Wildcard<'a> {
+impl Wildcard<'_> {
     const VERSION_PLACEHOLDER: &'static str = ":version";
 }
 
-impl<'a> fmt::Display for Wildcard<'a> {
+impl fmt::Display for Wildcard<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let (from_start, from_end) = self.from_components;
         let to = self.to_components.join(Self::VERSION_PLACEHOLDER);
