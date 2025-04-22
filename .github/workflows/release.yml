@@ -15,7 +15,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Install cargo release
-        uses: taiki-e/install-action@09dc018eee06ae1c9e0409786563f534210ceb83 # v2
+        uses: taiki-e/install-action@9903ab6feadaec33945de535fe9d181b91802a55 # v2
         with:
           tool: cargo-release@0.25.0
       - uses: taiki-e/create-gh-release-action@26b80501670402f1999aff4b934e1574ef2d3705 # v1
