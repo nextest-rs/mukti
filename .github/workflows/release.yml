@@ -77,7 +77,7 @@ jobs:
           toolchain: stable
           profile: minimal
           override: true
-      - uses: taiki-e/upload-rust-binary-action@31389c348ad0130069bed8448bf507fe8617f67f # v1
+      - uses: taiki-e/upload-rust-binary-action@db101489b509ad1c7acce163e118eb36a1650f98 # v1
         with:
           bin: mukti-bin
           archive: $tag-$target
