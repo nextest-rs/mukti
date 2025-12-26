@@ -80,17 +80,16 @@ pub(crate) async fn backfill_checksums(release_json: &mut MuktiReleasesJson, dow
     let location_count = all_locations_without_checksums(release_json).count();
 
     let results = {
-        let fetch_tasks = all_locations_without_checksums(release_json)
-            .cloned()
-            .map(|location| {
-                // Note the spawn is inside the async block, which ensures that
-                // the task is only spawned after being pulled off of the
-                // buffer_unordered queue.
-                async {
-                    let result = spawn_fetch_and_checksum_task(location.url.clone()).await;
-                    (location.url, result)
-                }
-            });
+        let fetch_tasks = all_locations_without_checksums(release_json).map(|location| {
+            // Note the spawn is inside the async block, which ensures that
+            // the task is only spawned after being pulled off of the
+            // buffer_unordered queue.
+            let url = location.url.clone();
+            async {
+                let result = spawn_fetch_and_checksum_task(url.clone()).await;
+                (url, result)
+            }
+        });
 
         let mut stream = futures_util::stream::iter(fetch_tasks).buffer_unordered(download_jobs);
         let mut results = BTreeMap::new();
