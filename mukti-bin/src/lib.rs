@@ -5,6 +5,7 @@ mod atomic;
 mod checksums;
 mod command;
 mod errors;
+mod manifests;
 mod redirects;
 mod release_json;
 mod specs;
