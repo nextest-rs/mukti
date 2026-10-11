@@ -12,3 +12,6 @@ This document captures code conventions for the mukti project.
 ## Tests
 
 - Run tests with `cargo nextest run`. mukti is part of the nextest project, so we dogfood nextest. Do not use `cargo test`, other than `cargo test --doc` for doctests.
+- Write tests in Rust. Do not add test drivers in Python or other scripting languages.
+- In table-driven tests, keep inputs and expected values clearly separate (for example, `CaseInput` and `CaseExpected`). Do not derive an expected value from the inputs to save lines; some duplication is fine.
+- The install scripts are tested end to end by `integration-tests/tests/install-scripts`, which runs the generated scripts under every shell it finds. Set `MUKTI_TEST_REQUIRE` to a comma-separated list of shells (for example, `dash,bash`) to make a missing one an error rather than an ignored test.

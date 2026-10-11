@@ -20,3 +20,32 @@ impl fmt::Display for NameValueParseError {
 }
 
 impl error::Error for NameValueParseError {}
+
+#[derive(Clone, Debug)]
+pub(crate) struct InvalidScriptValue {
+    kind: &'static str,
+    input: String,
+    expected: &'static str,
+}
+
+impl InvalidScriptValue {
+    pub(crate) fn new(kind: &'static str, input: &str, expected: &'static str) -> Self {
+        Self {
+            kind,
+            input: input.to_owned(),
+            expected,
+        }
+    }
+}
+
+impl fmt::Display for InvalidScriptValue {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "invalid {} {:?} for a generated install script (expected {})",
+            self.kind, self.input, self.expected,
+        )
+    }
+}
+
+impl error::Error for InvalidScriptValue {}
