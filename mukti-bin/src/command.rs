@@ -4,13 +4,20 @@
 use crate::{
     checksums::{backfill, fetch_release_archives},
     errors::NameValueParseError,
+    install_scripts::{
+        generate_install_scripts, BaseUrl, BinName, EnvPrefix, HttpsUrl, InstallScriptConfig,
+        PostInstall, ProjectName,
+    },
     manifests::generate_install_manifests,
     redirects::{generate_redirects, RedirectFlavor},
-    release_json::{read_release_json, update_release_json, write_releases_json},
+    release_json::{read_release_json, single_project, update_release_json, write_releases_json},
 };
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand};
-use color_eyre::{eyre::bail, Result};
+use color_eyre::{
+    eyre::{bail, WrapErr},
+    Result,
+};
 use semver::Version;
 use std::str::FromStr;
 
@@ -72,6 +79,33 @@ enum MuktiCommand {
         /// <OUT_DIR>/<VERSION>/install-manifest.txt.
         out_dir: Utf8PathBuf,
     },
+    /// Generate install.sh and install.ps1, which install a release using the
+    /// install manifests. The project name comes from the release JSON.
+    GenerateInstallScripts {
+        /// Name of the binary inside each archive, without .exe.
+        #[clap(long, value_name = "NAME")]
+        bin_name: BinName,
+
+        /// URL the install manifests are served from; the scripts must be
+        /// served there too, as <URL>/install.sh and <URL>/install.ps1.
+        #[clap(long, value_name = "URL")]
+        base_url: BaseUrl,
+
+        /// Documentation URL to mention in help and error messages.
+        #[clap(long, value_name = "URL")]
+        docs_url: HttpsUrl,
+
+        /// Prefix for the scripts' environment variables, for example
+        /// MYAPP_INSTALL for MYAPP_INSTALL_VERSION.
+        #[clap(long, value_name = "PREFIX")]
+        env_prefix: EnvPrefix,
+
+        #[clap(flatten)]
+        post_install: Option<PostInstall>,
+
+        /// Output directory.
+        out_dir: Utf8PathBuf,
+    },
     /// Add missing checksums and glibc floors to the release JSON
     #[clap(alias = "backfill-checksums")]
     Backfill {
@@ -115,6 +149,32 @@ impl MuktiApp {
             MuktiCommand::GenerateInstallManifests { out_dir } => {
                 let release_json = read_release_json(&self.json, false)?;
                 generate_install_manifests(&release_json, &out_dir)?;
+            }
+            MuktiCommand::GenerateInstallScripts {
+                bin_name,
+                base_url,
+                docs_url,
+                env_prefix,
+                post_install,
+                out_dir,
+            } => {
+                let release_json = read_release_json(&self.json, false)?;
+                let (project_name, _) = single_project(&release_json)?;
+                let project: ProjectName = project_name.parse().wrap_err_with(|| {
+                    format!(
+                        "the project name in {} cannot be used in an install script",
+                        self.json
+                    )
+                })?;
+                let config = InstallScriptConfig {
+                    project,
+                    bin_name,
+                    base_url,
+                    docs_url,
+                    env_prefix,
+                    post_install,
+                };
+                generate_install_scripts(&config, &out_dir)?;
             }
             MuktiCommand::Backfill { jobs } => {
                 let mut release_json = read_release_json(&self.json, false)?;
@@ -221,6 +281,7 @@ mod tests {
     use super::*;
     use crate::glibc::test_helpers::{glibc_binary, tar_gz};
     use camino::Utf8Path;
+    use clap::CommandFactory;
     use hex_literal::hex;
     use httptest::{matchers::request, responders::status_code, Expectation, Server};
     use mukti_metadata::{
@@ -776,6 +837,86 @@ mod tests {
                 .iter()
                 .all(|summary| summary.sha256.is_some()),
             "every location has a checksum",
+        );
+    }
+
+    fn parse_post_install(post_install_flags: &[&str]) -> Result<Option<PostInstall>, clap::Error> {
+        let mut args = vec![
+            "mukti-bin",
+            "generate-install-scripts",
+            "out",
+            "--bin-name",
+            "widget",
+            "--base-url",
+            "https://get.widget.example",
+            "--docs-url",
+            "https://widget.example/docs",
+            "--env-prefix",
+            "WIDGET_INSTALL",
+        ];
+        args.extend(post_install_flags);
+        let app = MuktiApp::try_parse_from(args)?;
+        match app.command {
+            MuktiCommand::GenerateInstallScripts { post_install, .. } => Ok(post_install),
+            MuktiCommand::AddRelease { .. }
+            | MuktiCommand::GenerateRedirects { .. }
+            | MuktiCommand::GenerateInstallManifests { .. }
+            | MuktiCommand::Backfill { .. } => {
+                panic!("parsed as generate-install-scripts")
+            }
+        }
+    }
+
+    #[test]
+    fn post_install_flags_are_both_or_neither() {
+        assert!(
+            parse_post_install(&[])
+                .expect("no post-install flags accepted")
+                .is_none(),
+            "no post-install flags means no post-install step",
+        );
+        let post_install = parse_post_install(&[
+            "--post-install-args",
+            "self setup",
+            "--post-install-min-version",
+            "1.2.3",
+        ])
+        .expect("both post-install flags accepted")
+        .expect("both post-install flags give a post-install step");
+        assert_eq!(
+            post_install,
+            PostInstall {
+                args: "self setup".parse().expect("valid post-install args"),
+                min_version: "1.2.3".parse().expect("valid stable version"),
+            },
+        );
+
+        for (flags, missing) in [
+            (
+                &["--post-install-args", "self setup"][..],
+                "--post-install-min-version",
+            ),
+            (
+                &["--post-install-min-version", "1.2.3"][..],
+                "--post-install-args",
+            ),
+        ] {
+            let error = parse_post_install(flags).expect_err("one post-install flag rejected");
+            assert_eq!(
+                error.kind(),
+                clap::error::ErrorKind::MissingRequiredArgument
+            );
+            assert!(error.to_string().contains(missing), "{flags:?}: {error}");
+        }
+
+        let help = MuktiApp::command()
+            .find_subcommand_mut("generate-install-scripts")
+            .expect("generate-install-scripts exists")
+            .render_usage()
+            .to_string();
+        assert!(
+            !help.contains("--post-install"),
+            "the post-install flags are optional, so the usage line omits them: {help}",
         );
     }
 }

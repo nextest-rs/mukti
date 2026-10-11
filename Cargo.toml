@@ -1,3 +1,16 @@
 [workspace]
 resolver = "2"
-members = ["mukti-metadata", "mukti-bin"]
+members = ["mukti-metadata", "mukti-bin", "integration-tests"]
+
+# Speed up archive packing on Linux by making the binary much smaller.
+[profile.dev.package.integration-tests]
+strip = "debuginfo"
+
+[profile.dev.package.sha2]
+opt-level = 3
+
+[profile.dev.package.miniz_oxide]
+opt-level = 3
+
+[profile.dev.package.crc32fast]
+opt-level = 3

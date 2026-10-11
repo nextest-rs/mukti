@@ -6,6 +6,7 @@ mod checksums;
 mod command;
 mod errors;
 mod glibc;
+mod install_scripts;
 mod manifests;
 mod redirects;
 mod release_json;
