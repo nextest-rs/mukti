@@ -1,6 +1,7 @@
 // Copyright (c) The mukti Contributors
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+mod atomic;
 mod checksums;
 mod command;
 mod errors;

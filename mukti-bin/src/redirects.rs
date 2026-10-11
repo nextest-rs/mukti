@@ -1,14 +1,15 @@
 // Copyright (c) The mukti Contributors
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::{command::Alias, release_json::single_project, specs::VersionSpec};
-use atomicwrites::{AtomicFile, OverwriteBehavior};
+use crate::{
+    atomic::write_atomic, command::Alias, release_json::single_project, specs::VersionSpec,
+};
 use camino::Utf8Path;
 use clap::ValueEnum;
-use color_eyre::eyre::{Context, Result};
+use color_eyre::eyre::Result;
 use core::fmt;
 use mukti_metadata::{MuktiReleasesJson, ReleaseVersionData};
-use std::{collections::HashMap, fmt::Write as _, io::Write as _};
+use std::{collections::HashMap, fmt::Write as _};
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
 pub(crate) enum RedirectFlavor {
@@ -96,14 +97,7 @@ pub(crate) fn generate_redirects(
         }
     }
 
-    let file = AtomicFile::new(
-        out_dir.join("_redirects"),
-        OverwriteBehavior::AllowOverwrite,
-    );
-    file.write(|f| f.write_all(out.as_bytes()))
-        .wrap_err("failed to write _redirects")?;
-
-    Ok(())
+    write_atomic(&out_dir.join("_redirects"), out.as_bytes())
 }
 
 // In a WildcardStore, wildcards and unmatched together cover the full set of redirects
