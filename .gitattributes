@@ -1,0 +1,3 @@
+# Don't do CRLF conversion on Windows, since the install script templates and
+# fixtures must be LF.
+* -text
