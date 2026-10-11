@@ -8,8 +8,8 @@ use atomicwrites::{AtomicFile, OverwriteBehavior};
 use camino::Utf8Path;
 use color_eyre::eyre::{bail, Result, WrapErr};
 use mukti_metadata::{
-    MuktiReleasesJson, ReleaseLocation, ReleaseRangeData, ReleaseStatus, ReleaseVersionData,
-    VersionRange,
+    MuktiProject, MuktiReleasesJson, ReleaseLocation, ReleaseRangeData, ReleaseStatus,
+    ReleaseVersionData, VersionRange,
 };
 use semver::Version;
 use std::{collections::BTreeMap, io::BufWriter};
@@ -28,6 +28,22 @@ pub(crate) fn read_release_json(path: &Utf8Path, allow_missing: bool) -> Result<
     };
 
     Ok(release_json)
+}
+
+pub(crate) fn single_project(release_json: &MuktiReleasesJson) -> Result<(&str, &MuktiProject)> {
+    if release_json.projects.len() != 1 {
+        bail!(
+            "mukti-bin currently only supports one project, {} found",
+            release_json.projects.len()
+        );
+    }
+
+    let (name, project) = release_json
+        .projects
+        .iter()
+        .next()
+        .expect("release_json has one project");
+    Ok((name, project))
 }
 
 pub(crate) fn update_release_json(
