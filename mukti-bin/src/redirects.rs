@@ -1,14 +1,13 @@
 // Copyright (c) The mukti Contributors
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::command::Alias;
+use crate::{command::Alias, specs::VersionSpec};
 use atomicwrites::{AtomicFile, OverwriteBehavior};
 use camino::Utf8Path;
 use clap::ValueEnum;
 use color_eyre::eyre::{bail, Context, Result};
 use core::fmt;
-use mukti_metadata::{MuktiReleasesJson, ReleaseVersionData, VersionRange};
-use semver::Version;
+use mukti_metadata::{MuktiReleasesJson, ReleaseVersionData};
 use std::{collections::HashMap, fmt::Write as _, io::Write as _};
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -55,7 +54,7 @@ pub(crate) fn generate_redirects(
         let latest_range_data = &project.ranges[range];
         let latest_version_data = &latest_range_data.versions[&latest_range_data.latest];
         append_redirect_list(
-            RedirectVersion::Latest,
+            VersionSpec::Latest,
             latest_version_data,
             aliases,
             netlify_prefix,
@@ -67,7 +66,7 @@ pub(crate) fn generate_redirects(
         if !data.is_prerelease {
             let version_data = &data.versions[&data.latest];
             append_redirect_list(
-                RedirectVersion::Range(*range),
+                VersionSpec::Range(*range),
                 version_data,
                 aliases,
                 netlify_prefix,
@@ -76,7 +75,7 @@ pub(crate) fn generate_redirects(
         }
         for (version, version_data) in &data.versions {
             append_redirect_list(
-                RedirectVersion::Version(version.clone()),
+                VersionSpec::Version(version.clone()),
                 version_data,
                 aliases,
                 netlify_prefix,
@@ -133,7 +132,7 @@ impl<'a> WildcardStore<'a> {
 
         for redirect in redirects {
             // Only consider full versions.
-            if !matches!(redirect.version, RedirectVersion::Version(_)) {
+            if !matches!(redirect.version, VersionSpec::Version(_)) {
                 unmatched.push(redirect.clone());
                 continue;
             }
@@ -240,7 +239,7 @@ impl fmt::Display for Wildcard<'_> {
 }
 
 fn append_redirect_list(
-    version: RedirectVersion,
+    version: VersionSpec,
     version_data: &ReleaseVersionData,
     aliases: &[Alias],
     prefix: &str,
@@ -282,7 +281,7 @@ fn append_redirect_list(
 
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
 struct Redirect {
-    version: RedirectVersion,
+    version: VersionSpec,
     kind: RedirectKind,
     from: String,
     to: String,
@@ -300,22 +299,5 @@ enum RedirectKind {
 impl fmt::Display for Redirect {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} {} {}", self.from, self.to, self.code)
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
-enum RedirectVersion {
-    Latest,
-    Range(VersionRange),
-    Version(Version),
-}
-
-impl fmt::Display for RedirectVersion {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Latest => write!(f, "latest"),
-            Self::Range(range) => write!(f, "{}", range),
-            Self::Version(version) => write!(f, "{}", version),
-        }
     }
 }

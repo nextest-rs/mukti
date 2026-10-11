@@ -6,5 +6,6 @@ mod command;
 mod errors;
 mod redirects;
 mod release_json;
+mod specs;
 
 pub use command::MuktiApp;
