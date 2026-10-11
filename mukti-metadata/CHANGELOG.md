@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `MuktiProject::latest_active_stable` and `ReleaseRangeData::latest_active_stable` return the newest version that is active and not a pre-release.
+
 ## [0.3.0] - 2024-11-24
 
 ### Added
