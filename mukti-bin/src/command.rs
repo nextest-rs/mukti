@@ -4,6 +4,7 @@
 use crate::{
     checksums::{backfill_checksums, fetch_release_checksums},
     errors::NameValueParseError,
+    manifests::generate_install_manifests,
     redirects::{generate_redirects, RedirectFlavor},
     release_json::{read_release_json, update_release_json, write_releases_json},
 };
@@ -66,6 +67,13 @@ enum MuktiCommand {
         /// Output directory.
         out_dir: Utf8PathBuf,
     },
+    #[clap(about = "Generate per-version install manifests from the release JSON")]
+    GenerateInstallManifests {
+        #[clap(
+            help = "Output directory: manifests go to <OUT_DIR>/<VERSION>/install-manifest.txt"
+        )]
+        out_dir: Utf8PathBuf,
+    },
     /// Add checksums to the release JSON
     BackfillChecksums {
         /// Number of release files to download in parallel.
@@ -104,6 +112,10 @@ impl MuktiApp {
             } => {
                 let release_json = read_release_json(&self.json, false)?;
                 generate_redirects(&release_json, &aliases, flavor, &prefix, &out_dir)?;
+            }
+            MuktiCommand::GenerateInstallManifests { out_dir } => {
+                let release_json = read_release_json(&self.json, false)?;
+                generate_install_manifests(&release_json, &out_dir)?;
             }
             MuktiCommand::BackfillChecksums { jobs } => {
                 let mut release_json = read_release_json(&self.json, false)?;
