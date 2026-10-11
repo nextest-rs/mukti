@@ -1,11 +1,11 @@
 // Copyright (c) The mukti Contributors
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::{command::Alias, specs::VersionSpec};
+use crate::{command::Alias, release_json::single_project, specs::VersionSpec};
 use atomicwrites::{AtomicFile, OverwriteBehavior};
 use camino::Utf8Path;
 use clap::ValueEnum;
-use color_eyre::eyre::{bail, Context, Result};
+use color_eyre::eyre::{Context, Result};
 use core::fmt;
 use mukti_metadata::{MuktiReleasesJson, ReleaseVersionData};
 use std::{collections::HashMap, fmt::Write as _, io::Write as _};
@@ -26,18 +26,7 @@ pub(crate) fn generate_redirects(
     prefix: &str,
     out_dir: &Utf8Path,
 ) -> Result<()> {
-    if release_json.projects.len() != 1 {
-        bail!(
-            "mukti-bin currently only supports one project, {} found",
-            release_json.projects.len()
-        );
-    }
-
-    let project = release_json
-        .projects
-        .values()
-        .next()
-        .expect("release_json has one project");
+    let (_, project) = single_project(release_json)?;
 
     let netlify_prefix = prefix.trim_end_matches('/');
     let mut out = String::with_capacity(4096);
