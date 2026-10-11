@@ -42,6 +42,15 @@ impl MuktiProject {
             .find(|&(v2, _)| eq_ignoring_build_metadata(version, v2))
     }
 
+    /// Returns the newest active, non-prerelease version across all ranges, if
+    /// any.
+    pub fn latest_active_stable(&self) -> Option<(&VersionRange, &Version, &ReleaseVersionData)> {
+        self.ranges.iter().rev().find_map(|(range, data)| {
+            data.latest_active_stable()
+                .map(|(version, version_data)| (range, version, version_data))
+        })
+    }
+
     /// Retrieve the latest version that matches this `VersionReq`.
     ///
     /// This will match the latest non-pre-release, non-yanked version.
@@ -63,6 +72,16 @@ pub struct ReleaseRangeData {
     /// All known versions
     #[serde(serialize_with = "serialize_reverse")]
     pub versions: BTreeMap<Version, ReleaseVersionData>,
+}
+
+impl ReleaseRangeData {
+    /// Returns the newest active, non-prerelease version in this range, if any.
+    pub fn latest_active_stable(&self) -> Option<(&Version, &ReleaseVersionData)> {
+        self.versions
+            .iter()
+            .rev()
+            .find(|(version, data)| version.pre.is_empty() && data.status == ReleaseStatus::Active)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -343,6 +362,41 @@ mod tests {
             Some(&version("0.5.1")),
             "0.5.2 is yanked so 0.5.1 should be returned"
         );
+    }
+
+    #[test]
+    fn test_latest_active_stable() {
+        let mut json: MuktiReleasesJson = serde_json::from_str(FIXTURE_JSON).unwrap();
+        let project = json.projects.get_mut("mukti").unwrap();
+        let range_0_5: VersionRange = "0.5".parse().unwrap();
+        let range_0_6: VersionRange = "0.6".parse().unwrap();
+
+        let latest = |project: &MuktiProject| {
+            project
+                .latest_active_stable()
+                .map(|(range, version, _)| (*range, version.clone()))
+        };
+        assert_eq!(
+            latest(project),
+            Some((range_0_5, version("0.5.3"))),
+            "0.6 only has a pre-release, so the latest stable version is in 0.5"
+        );
+        assert!(
+            project.ranges[&range_0_6].latest_active_stable().is_none(),
+            "a range with only pre-releases has no stable version"
+        );
+
+        let range = project.ranges.get_mut(&range_0_5).unwrap();
+        range.versions.get_mut(&version("0.5.3")).unwrap().status = ReleaseStatus::Yanked;
+        assert_eq!(
+            latest(project),
+            Some((range_0_5, version("0.5.1"))),
+            "0.5.3 and 0.5.2 are yanked, so 0.5.1 is the latest stable version"
+        );
+
+        let range = project.ranges.get_mut(&range_0_5).unwrap();
+        range.versions.get_mut(&version("0.5.1")).unwrap().status = ReleaseStatus::Yanked;
+        assert_eq!(latest(project), None, "every stable version is yanked");
     }
 
     fn get_latest_matching_version<'a>(
