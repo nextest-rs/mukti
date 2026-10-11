@@ -301,3 +301,34 @@ impl fmt::Display for Redirect {
         write!(f, "{} {} {}", self.from, self.to, self.code)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::specs::test_helpers::fixture_json;
+    use std::fs;
+
+    fn redirects(release_json: &MuktiReleasesJson, flavor: RedirectFlavor) -> String {
+        let aliases: Vec<Alias> = [
+            "linux=x86_64-unknown-linux-gnu:tar.gz",
+            "windows=x86_64-pc-windows-msvc:zip",
+        ]
+        .into_iter()
+        .map(|alias| alias.parse().expect("alias parsed"))
+        .collect();
+        let out_dir = camino_tempfile::tempdir().expect("temp dir created");
+        generate_redirects(release_json, &aliases, flavor, "/", out_dir.path())
+            .expect("redirects generated");
+        fs::read_to_string(out_dir.path().join("_redirects")).expect("redirects read")
+    }
+
+    #[test]
+    fn netlify_redirects_match_expected() {
+        insta::assert_snapshot!(redirects(&fixture_json(), RedirectFlavor::Netlify));
+    }
+
+    #[test]
+    fn cloudflare_redirects_match_expected() {
+        insta::assert_snapshot!(redirects(&fixture_json(), RedirectFlavor::Cloudflare));
+    }
+}

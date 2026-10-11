@@ -22,3 +22,14 @@ impl fmt::Display for VersionSpec {
         }
     }
 }
+
+#[cfg(test)]
+pub(crate) mod test_helpers {
+    use mukti_metadata::MuktiReleasesJson;
+
+    static FIXTURE_JSON: &str = include_str!("../../fixtures/mukti-releases.json");
+
+    pub(crate) fn fixture_json() -> MuktiReleasesJson {
+        serde_json::from_str(FIXTURE_JSON).expect("fixture JSON deserialized")
+    }
+}
