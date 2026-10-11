@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{
-    atomic::write_atomic, command::Alias, release_json::single_project, specs::VersionSpec,
+    atomic::write_atomic,
+    command::Alias,
+    release_json::single_project,
+    specs::{resolved_specs, VersionSpec},
 };
 use camino::Utf8Path;
 use clap::ValueEnum;
@@ -40,38 +43,14 @@ pub(crate) fn generate_redirects(
 
     let mut redirects = Vec::new();
 
-    if let Some(range) = &project.latest {
-        let latest_range_data = &project.ranges[range];
-        let latest_version_data = &latest_range_data.versions[&latest_range_data.latest];
+    for resolved in resolved_specs(project) {
         append_redirect_list(
-            VersionSpec::Latest,
-            latest_version_data,
+            resolved.spec,
+            resolved.data,
             aliases,
             netlify_prefix,
             &mut redirects,
         );
-    }
-
-    for (range, data) in &project.ranges {
-        if !data.is_prerelease {
-            let version_data = &data.versions[&data.latest];
-            append_redirect_list(
-                VersionSpec::Range(*range),
-                version_data,
-                aliases,
-                netlify_prefix,
-                &mut redirects,
-            );
-        }
-        for (version, version_data) in &data.versions {
-            append_redirect_list(
-                VersionSpec::Version(version.clone()),
-                version_data,
-                aliases,
-                netlify_prefix,
-                &mut redirects,
-            );
-        }
     }
 
     match flavor {
