@@ -114,42 +114,44 @@ pub(crate) fn update_release_json(
                 metadata: serde_json::Value::Null,
             },
         );
-
-        // Look for the latest release that isn't a pre-release.
-        // TODO: also consider yanked versions here.
-        let latest_non_prerelease = data
-            .versions
-            .keys()
-            .rev()
-            .find(|version| version.pre.is_empty());
-        match latest_non_prerelease {
-            Some(version) => {
-                data.latest = version.clone();
-                data.is_prerelease = false;
-            }
-            None => {
-                data.latest = data
-                    .versions
-                    .keys()
-                    .next_back()
-                    .expect("we just added a release so this can't be empty")
-                    .clone();
-                data.is_prerelease = true;
-            }
-        }
     }
 
-    // Check if there's a newer release.
-    let latest_range = project
-        .ranges
-        .iter()
-        .filter_map(|(range, data)| (!data.is_prerelease).then_some(*range))
-        .max();
-    project.latest = latest_range;
+    recompute_latest(project);
 
     write_releases_json(release_json, path)?;
 
     Ok(())
+}
+
+/// Recomputes the latest for every range.
+///
+/// We do this in case a yank edited by hand didn't update state properly.
+fn recompute_latest(project: &mut MuktiProject) {
+    for data in project.ranges.values_mut() {
+        // Prefer, in order:
+        //
+        // * The newest active stable version.
+        // * The newest active version.
+        // * The newest of any status. (The last one because latest is not
+        //   optional in the releases.json schema.)
+        let newest_active = data
+            .versions
+            .iter()
+            .rev()
+            .find(|(_, version_data)| version_data.status == ReleaseStatus::Active)
+            .map(|(version, _)| version);
+        let latest = data
+            .latest_active_stable()
+            .map(|(version, _)| version)
+            .or(newest_active)
+            .or_else(|| data.versions.keys().next_back());
+        if let Some(version) = latest.cloned() {
+            data.latest = version;
+        }
+        data.is_prerelease = data.versions.keys().all(|version| !version.pre.is_empty());
+    }
+
+    project.latest = project.latest_active_stable().map(|(range, _, _)| *range);
 }
 
 pub(crate) fn write_releases_json(release_json: &MuktiReleasesJson, path: &Utf8Path) -> Result<()> {
@@ -158,4 +160,44 @@ pub(crate) fn write_releases_json(release_json: &MuktiReleasesJson, path: &Utf8P
         .wrap_err_with(|| format!("failed to serialize releases JSON to {}", path))?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::specs::test_helpers::{fixture_project, set_status};
+    use semver::Version;
+
+    fn version(version: &str) -> Version {
+        version.parse().expect("version parsed")
+    }
+
+    #[test]
+    fn recompute_latest_skips_yanked() {
+        let mut project = fixture_project();
+        let range_0_5: VersionRange = "0.5".parse().expect("range parsed");
+        let range_0_6: VersionRange = "0.6".parse().expect("range parsed");
+
+        recompute_latest(&mut project);
+        assert_eq!(project.latest, Some(range_0_5));
+        assert_eq!(project.ranges[&range_0_5].latest, version("0.5.3"));
+        assert!(!project.ranges[&range_0_5].is_prerelease);
+        assert_eq!(project.ranges[&range_0_6].latest, version("0.6.0-alpha.1"));
+        assert!(project.ranges[&range_0_6].is_prerelease);
+
+        set_status(&mut project, "0.5.3", ReleaseStatus::Yanked);
+        recompute_latest(&mut project);
+        assert_eq!(project.latest, Some(range_0_5));
+        assert_eq!(project.ranges[&range_0_5].latest, version("0.5.1"));
+        assert!(!project.ranges[&range_0_5].is_prerelease);
+
+        set_status(&mut project, "0.5.1", ReleaseStatus::Yanked);
+        recompute_latest(&mut project);
+        assert_eq!(project.latest, None);
+        assert_eq!(project.ranges[&range_0_5].latest, version("0.5.3"));
+        assert!(
+            !project.ranges[&range_0_5].is_prerelease,
+            "the range still has stable versions, even though all are yanked",
+        );
+    }
 }

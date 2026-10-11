@@ -25,11 +25,29 @@ impl fmt::Display for VersionSpec {
 
 #[cfg(test)]
 pub(crate) mod test_helpers {
-    use mukti_metadata::MuktiReleasesJson;
+    use mukti_metadata::{MuktiProject, MuktiReleasesJson, ReleaseStatus};
+    use semver::Version;
 
     static FIXTURE_JSON: &str = include_str!("../../fixtures/mukti-releases.json");
 
     pub(crate) fn fixture_json() -> MuktiReleasesJson {
         serde_json::from_str(FIXTURE_JSON).expect("fixture JSON deserialized")
+    }
+
+    pub(crate) fn fixture_project() -> MuktiProject {
+        fixture_json()
+            .projects
+            .remove("mukti")
+            .expect("fixture has a mukti project")
+    }
+
+    pub(crate) fn set_status(project: &mut MuktiProject, version: &str, status: ReleaseStatus) {
+        let version: Version = version.parse().expect("version parsed");
+        let data = project
+            .ranges
+            .values_mut()
+            .find_map(|range| range.versions.get_mut(&version))
+            .expect("version found in fixture");
+        data.status = status;
     }
 }
