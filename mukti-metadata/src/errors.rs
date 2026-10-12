@@ -17,15 +17,33 @@ pub struct VersionRangeParseError {
 
     /// The error that occurred.
     #[source]
-    pub error: ParseIntError,
+    pub error: VersionRangeComponentError,
 }
 
 impl VersionRangeParseError {
-    pub(crate) fn new(input: &str, component: VersionRangeKind, error: ParseIntError) -> Self {
+    pub(crate) fn new(
+        input: &str,
+        component: VersionRangeKind,
+        error: VersionRangeComponentError,
+    ) -> Self {
         Self {
             input: input.to_owned(),
             component,
             error,
         }
     }
+}
+
+/// The reason on component of a version range failed to parse.
+#[derive(Debug, Error)]
+#[non_exhaustive]
+pub enum VersionRangeComponentError {
+    /// The component is not an unsigned integer.
+    #[error(transparent)]
+    ParseInt(ParseIntError),
+
+    /// The component is an integer, but it isn't in canonical form (no leading
+    /// plus sign or leading zeros).
+    #[error("not in canonical form (expected `{canonical}`)")]
+    NotCanonical { canonical: u64 },
 }

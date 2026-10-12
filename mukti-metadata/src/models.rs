@@ -1,7 +1,7 @@
 // Copyright (c) The mukti Contributors
 // SPDX-License-Identifier: MIT or Apache-2.0
 
-use crate::VersionRangeParseError;
+use crate::{VersionRangeComponentError, VersionRangeParseError};
 use semver::{Version, VersionReq};
 use serde::{de::Visitor, ser::SerializeMap, Deserialize, Serialize, Serializer};
 use std::{borrow::Cow, collections::BTreeMap, fmt, str::FromStr};
@@ -231,8 +231,17 @@ impl FromStr for VersionRange {
 }
 
 fn parse_component(s: &str, component: VersionRangeKind) -> Result<u64, VersionRangeParseError> {
-    s.parse()
-        .map_err(|err| VersionRangeParseError::new(s, component, err))
+    let value: u64 = s.parse().map_err(|err| {
+        VersionRangeParseError::new(s, component, VersionRangeComponentError::ParseInt(err))
+    })?;
+    if value.to_string() != s {
+        return Err(VersionRangeParseError::new(
+            s,
+            component,
+            VersionRangeComponentError::NotCanonical { canonical: value },
+        ));
+    }
+    Ok(value)
 }
 
 impl Serialize for VersionRange {
@@ -397,6 +406,77 @@ mod tests {
         let range = project.ranges.get_mut(&range_0_5).unwrap();
         range.versions.get_mut(&version("0.5.1")).unwrap().status = ReleaseStatus::Yanked;
         assert_eq!(latest(project), None, "every stable version is yanked");
+    }
+
+    #[test]
+    fn test_version_range_parse_canonical() {
+        let canonical = [
+            ("0", VersionRange::Major(0)),
+            ("3", VersionRange::Major(3)),
+            ("18446744073709551615", VersionRange::Major(u64::MAX)),
+            ("0.0", VersionRange::Minor(0)),
+            ("0.5", VersionRange::Minor(5)),
+            ("0.10", VersionRange::Minor(10)),
+            ("0.0.0", VersionRange::Patch(0)),
+            ("0.0.7", VersionRange::Patch(7)),
+        ];
+        for (input, expected) in canonical {
+            let range: VersionRange = input
+                .parse()
+                .unwrap_or_else(|err| panic!("{input} should parse: {err}"));
+            assert_eq!(range, expected, "{input} parses to the expected range");
+            assert_eq!(range.to_string(), input, "{input} is displayed as written");
+        }
+
+        let not_canonical = [
+            ("00", 0),
+            ("03", 3),
+            ("+3", 3),
+            ("0.00", 0),
+            ("0.05", 5),
+            ("0.+5", 5),
+            ("0.0.00", 0),
+            ("0.0.07", 7),
+            ("0.0.+7", 7),
+        ];
+        for (input, expected) in not_canonical {
+            let err = input
+                .parse::<VersionRange>()
+                .expect_err("a non-canonical range is rejected");
+            match err.error {
+                VersionRangeComponentError::NotCanonical { canonical } => {
+                    assert_eq!(canonical, expected, "canonical component for {input}");
+                }
+                VersionRangeComponentError::ParseInt(err) => {
+                    panic!("{input} should be rejected as non-canonical, not with: {err}");
+                }
+            }
+        }
+
+        let not_integers = [
+            "",
+            "0.",
+            "0.0.",
+            "x",
+            "1.2",
+            "-1",
+            " 1",
+            "18446744073709551616",
+        ];
+        for input in not_integers {
+            let err = input
+                .parse::<VersionRange>()
+                .expect_err("a range with a non-integer component is rejected");
+            match err.error {
+                VersionRangeComponentError::ParseInt(_) => {}
+                VersionRangeComponentError::NotCanonical { canonical } => {
+                    panic!("{input} should not parse as an integer, but parsed as {canonical}");
+                }
+            }
+        }
+
+        serde_json::from_str::<VersionRange>(r#""0.05""#)
+            .expect_err("deserialization rejects a non-canonical range as well");
     }
 
     fn get_latest_matching_version<'a>(
