@@ -85,24 +85,11 @@ pub(crate) fn update_release_json(
 
         let locations: Vec<_> = archives
             .into_iter()
-            .map(|archive| {
-                let checksums = match archive.checksums {
-                    Ok(checksums) => checksums.to_checksum_map(),
-                    Err(e) => {
-                        eprintln!(
-                            "failed to compute checksums for {}: {}",
-                            archive.archive.name, e
-                        );
-                        BTreeMap::new()
-                    }
-                };
-
-                ReleaseLocation {
-                    target: archive.archive.target_format.target.clone(),
-                    format: archive.archive.target_format.format.clone(),
-                    url: archive.url,
-                    checksums,
-                }
+            .map(|archive| ReleaseLocation {
+                target: archive.archive.target_format.target.clone(),
+                format: archive.archive.target_format.format.clone(),
+                url: archive.url,
+                checksums: archive.checksums.to_checksum_map(),
             })
             .collect();
         data.versions.insert(

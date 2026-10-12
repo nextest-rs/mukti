@@ -5,7 +5,10 @@ use std::collections::BTreeMap;
 
 use blake2::Blake2b;
 use bytes::Bytes;
-use color_eyre::{eyre::eyre, Result};
+use color_eyre::{
+    eyre::{bail, eyre},
+    Result,
+};
 use futures_util::stream::StreamExt;
 use mukti_metadata::{Digest, DigestAlgorithm, MuktiReleasesJson, ReleaseLocation};
 use sha2::{Digest as _, Sha256};
@@ -16,15 +19,14 @@ use crate::command::Archive;
 pub(crate) struct ArchiveWithChecksums {
     pub(crate) archive: Archive,
     pub(crate) url: String,
-    // Err if fetching checksums failed.
-    pub(crate) checksums: Result<Checksums>,
+    pub(crate) checksums: Checksums,
 }
 
 pub(crate) async fn fetch_release_checksums(
     archive_prefix: &str,
     archives: Vec<Archive>,
     download_jobs: usize,
-) -> Vec<ArchiveWithChecksums> {
+) -> Result<Vec<ArchiveWithChecksums>> {
     let fetch_tasks = archives.iter().map(|archive| {
         let url = format!("{}/{}", archive_prefix, archive.name);
         async move {
@@ -37,43 +39,48 @@ pub(crate) async fn fetch_release_checksums(
     // order.
     let mut stream = futures_util::stream::iter(fetch_tasks).buffered(download_jobs);
 
-    let mut succeeded = 0;
-    let mut failed = 0;
-
     let mut archives_with_checksums = Vec::new();
+    let mut failures = Vec::new();
 
     while let Some((archive, url, result)) = stream.next().await {
-        let checksums = match result {
+        match result {
             Ok(Ok(checksums)) => {
-                succeeded += 1;
-                Ok(checksums)
+                archives_with_checksums.push(ArchiveWithChecksums {
+                    archive: archive.clone(),
+                    url,
+                    checksums,
+                });
             }
             Ok(Err(e)) => {
-                failed += 1;
                 eprintln!("for {url}, error fetching checksum: {e}");
-                Err(eyre!(e))
+                failures.push(format!("  {url}: {:#}", eyre!(e.without_url())));
             }
             Err(e) => {
-                failed += 1;
                 eprintln!("for {url}, error waiting on checksum task: {e}");
-                Err(eyre!(e))
+                failures.push(format!("  {url}: {:#}", eyre!(e)));
             }
-        };
+        }
 
         eprintln!(
             "fetched {}/{} checksums, {} failed",
-            succeeded,
+            archives_with_checksums.len(),
             archives.len(),
-            failed
+            failures.len()
         );
-        archives_with_checksums.push(ArchiveWithChecksums {
-            archive: archive.clone(),
-            url,
-            checksums,
-        });
     }
 
-    archives_with_checksums
+    if !failures.is_empty() {
+        bail!(
+            "failed to fetch {} of {} archive(s), so the release was not added:\n{}\n\
+             check that --archive-prefix and the archive names are correct, \
+             and that every archive has been uploaded",
+            failures.len(),
+            archives.len(),
+            failures.join("\n"),
+        );
+    }
+
+    Ok(archives_with_checksums)
 }
 
 pub(crate) async fn backfill_checksums(release_json: &mut MuktiReleasesJson, download_jobs: usize) {
@@ -184,7 +191,9 @@ fn spawn_fetch_and_checksum_task(url: String) -> JoinHandle<Result<Checksums, re
 }
 
 async fn fetch_url(url: &str) -> reqwest::Result<Bytes> {
-    let resp = reqwest::get(url).await?;
+    // Without error_for_status, the body of a 404 (etc) page is checksummed as
+    // if it were the archive.
+    let resp = reqwest::get(url).await?.error_for_status()?;
     resp.bytes().await
 }
 
