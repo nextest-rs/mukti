@@ -6,6 +6,11 @@
 
 - `MuktiProject::latest_active_stable` and `ReleaseRangeData::latest_active_stable` return the newest version that is active and not a pre-release.
 
+### Changed
+
+- Parsing and deserializing a `VersionRange` now only accepts the form that `Display` writes. Components with leading zeros or a leading plus sign, such as `0.05` and `+1`, used to parse to the same range as `0.5` and `1`; they are now errors.
+- **Breaking:** `VersionRangeParseError::error` is now a `VersionRangeComponentError` rather than a `ParseIntError`.
+
 ## [0.3.0] - 2024-11-24
 
 ### Added
