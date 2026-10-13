@@ -30,17 +30,62 @@ jobs:
         run: cargo clippy --all-features --all-targets
       - name: Lint (rustfmt)
         run: cargo xfmt --check
+      # Linting requires real scripts with substituted values in them. Generate
+      # from the templates with stand-in values.
+      - name: Generate install scripts
+        run: |
+          cargo run --package mukti-bin --bin mukti-bin -- \
+            --json fixtures/mukti-releases.json \
+            generate-install-scripts "${RUNNER_TEMP}/install-scripts" \
+            --bin-name mukti-bin \
+            --base-url https://get.mukti.example \
+            --docs-url https://mukti.example/docs/ \
+            --env-prefix MUKTI_INSTALL \
+            --min-glibc 2.27 \
+            --post-install-args "self setup" \
+            --post-install-min-version 0.5.0
+      - name: Lint generated install.sh (shellcheck)
+        run: shellcheck --shell sh "${RUNNER_TEMP}/install-scripts/install.sh"
+      - name: Lint generated install.ps1 (PSScriptAnalyzer)
+        shell: pwsh
+        run: |
+          # Use a pinned PSScriptAnalyzer version to ensure that an upstream
+          # change doesn't break CI. (XXX can we use Renovate to update this?)
+          $version = '1.25.0'
+          if (-not (Get-Module -ListAvailable -Name PSScriptAnalyzer | Where-Object Version -eq $version)) {
+            Install-Module -Name PSScriptAnalyzer -RequiredVersion $version -Scope CurrentUser -Force
+          }
+          Import-Module -Name PSScriptAnalyzer -RequiredVersion $version
+          Invoke-ScriptAnalyzer -Path (Join-Path $env:RUNNER_TEMP 'install-scripts/install.ps1') -EnableExit
 
   build:
-    name: Build and test
+    name: Build and test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     permissions:
       contents: read
     strategy:
       matrix:
-        os: [ ubuntu-latest ]
+        os: [ ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest, windows-11-arm ]
         rust-version: [ stable ]
+        # The "require" directive specifies which shells must be installed on
+        # the system, otherwise the test run will fail. (This is so that we
+        # don't accidentally lose coverage because a shell got dropped by the
+        # runner image.)
+        include:
+          - os: ubuntu-latest
+            require: dash,bash,busybox,ksh93,pwsh
+          - os: ubuntu-24.04-arm
+            require: dash,bash,busybox,ksh93,pwsh
+          - os: macos-latest
+            require: dash,bash,pwsh
+          - os: windows-latest
+            require: sh,bash,powershell,pwsh
+          # The windows-11-arm's image documentation mentions Bash and
+          # PowerShell 7 only, so sh and Windows PowerShell (5.1) are tested
+          # against if present, but not required.
+          - os: windows-11-arm
+            require: bash,pwsh
       fail-fast: false
     env:
       RUSTFLAGS: -D warnings
@@ -52,7 +97,79 @@ jobs:
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
         with:
           toolchain: ${{ matrix.rust-version }}
+      - name: Install extra shells
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install --yes busybox-static ksh93u+m
+      - name: Install nextest
+        uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8 # v2.87.28
+        with:
+          tool: nextest@0.9.148
       - name: Build
         run: cargo build
       - name: Test
-        run: cargo test --all-features
+        # Use the bash shell, so that on Windows the tests find Git's sh and
+        # bash on PATH (rather than the WSL launcher).
+        shell: bash
+        env:
+          MUKTI_TEST_REQUIRE: ${{ matrix.require }}
+        run: cargo nextest run --profile ci --all-features
+      - name: Test (doctests)
+        run: cargo test --doc --all-features
+      # With an x64 PowerShell on an ARM64 runner, we must still install the
+      # ARM64 build.
+      - name: Test install.ps1 under an emulated x64 PowerShell
+        if: matrix.os == 'windows-11-arm'
+        shell: bash
+        env:
+          PWSH_X64_URL: https://github.com/PowerShell/PowerShell/releases/download/v7.4.20/PowerShell-7.4.20-win-x64.zip
+          PWSH_X64_SHA256: fb88cd3731847006b157978d6c0a426390d346696d91d1ed85b5e5eb88cb2d40
+          MUKTI_TEST_REQUIRE: pwsh
+          # This environment variable makes the tests fail unless the pwsh they
+          # find is x64 on an ARM64 machine.
+          MUKTI_TEST_EMULATED_POWERSHELL: "1"
+        run: |
+          dir="$(cygpath --unix "${RUNNER_TEMP}")/pwsh-x64"
+          mkdir -p "${dir}"
+          cd "${dir}"
+          curl --location --silent --show-error --fail --output pwsh.zip "${PWSH_X64_URL}"
+          echo "${PWSH_X64_SHA256}  pwsh.zip" | sha256sum --check -
+          7z x -y pwsh.zip > /dev/null
+          cd "${GITHUB_WORKSPACE}"
+          export PATH="${dir}:${PATH}"
+          # Fail here if the x64 copy is not the pwsh that will be found.
+          test "$(dirname "$(command -v pwsh)")" = "${dir}"
+          cargo nextest run --profile ci --all-features --package integration-tests -E 'test(/^pwsh::/)'
+
+  # Also test on Alpine which uses musl, and busybox as sh.
+  alpine:
+    name: Build and test (Alpine)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Test
+        env:
+          NEXTEST_URL: https://get.nexte.st/0.9.148/linux-musl
+          NEXTEST_SHA256: bf92cb81450872d960ffa13857a83084d557ec0cdc141663d263bb23ef756f97
+        run: |
+          docker run --rm \
+            --volume "${PWD}:/work" \
+            --workdir /work \
+            --env RUSTFLAGS="-D warnings" \
+            --env MUKTI_TEST_REQUIRE=busybox \
+            --env NEXTEST_URL="${NEXTEST_URL}" \
+            --env NEXTEST_SHA256="${NEXTEST_SHA256}" \
+            rust:alpine \
+            sh -c '
+              set -e
+              apk add --no-cache musl-dev curl
+              curl -fsSL -o /tmp/cargo-nextest.tar.gz "${NEXTEST_URL}"
+              echo "${NEXTEST_SHA256}  /tmp/cargo-nextest.tar.gz" | sha256sum -c -
+              tar -xzf /tmp/cargo-nextest.tar.gz -C "${CARGO_HOME}/bin"
+              cargo nextest run --profile ci --all-features
+            '

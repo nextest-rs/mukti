@@ -4,20 +4,26 @@
 use crate::{
     checksums::{backfill_checksums, fetch_release_checksums},
     errors::NameValueParseError,
+    install_scripts::{
+        generate_install_scripts, BaseUrl, BinName, EnvPrefix, GlibcVersion, HttpsUrl,
+        InstallScriptConfig, PostInstall, PostInstallArgs, ProjectName, StableVersion,
+    },
     manifests::generate_install_manifests,
     redirects::{generate_redirects, RedirectFlavor},
-    release_json::{read_release_json, update_release_json, write_releases_json},
+    release_json::{read_release_json, single_project, update_release_json, write_releases_json},
 };
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand};
-use color_eyre::Result;
+use color_eyre::{
+    eyre::{bail, WrapErr},
+    Result,
+};
 use semver::Version;
 use std::str::FromStr;
 
-#[doc(hidden)]
 #[derive(Debug, Parser)]
 #[clap(version)]
-pub struct MuktiApp {
+pub(crate) struct MuktiApp {
     #[clap(subcommand)]
     command: MuktiCommand,
 
@@ -67,11 +73,47 @@ enum MuktiCommand {
         /// Output directory.
         out_dir: Utf8PathBuf,
     },
-    #[clap(about = "Generate per-version install manifests from the release JSON")]
+    /// Generate per-version install manifests from the release JSON.
     GenerateInstallManifests {
-        #[clap(
-            help = "Output directory: manifests go to <OUT_DIR>/<VERSION>/install-manifest.txt"
-        )]
+        /// Output directory: manifests go to
+        /// <OUT_DIR>/<VERSION>/install-manifest.txt.
+        out_dir: Utf8PathBuf,
+    },
+    /// Generate install.sh and install.ps1, which install a release using the
+    /// install manifests. The project name comes from the release JSON.
+    GenerateInstallScripts {
+        /// Name of the binary inside each archive, without .exe.
+        #[clap(long, value_name = "NAME")]
+        bin_name: BinName,
+
+        /// URL the install manifests are served from; the scripts must be
+        /// served there too, as <URL>/install.sh and <URL>/install.ps1.
+        #[clap(long, value_name = "URL")]
+        base_url: BaseUrl,
+
+        /// Documentation URL to mention in help and error messages.
+        #[clap(long, value_name = "URL")]
+        docs_url: HttpsUrl,
+
+        /// Prefix for the scripts' environment variables, for example
+        /// MYAPP_INSTALL for MYAPP_INSTALL_VERSION.
+        #[clap(long, value_name = "PREFIX")]
+        env_prefix: EnvPrefix,
+
+        /// Oldest glibc the gnu builds run on; older hosts get the musl build.
+        #[clap(long, value_name = "MAJOR.MINOR")]
+        min_glibc: GlibcVersion,
+
+        /// Arguments to run the installed binary with after installing,
+        /// separated by whitespace.
+        #[clap(long, value_name = "ARGS", requires = "post_install_min_version")]
+        post_install_args: Option<PostInstallArgs>,
+
+        /// Oldest release to run the post-install command for.
+        #[clap(long, value_name = "VERSION", requires = "post_install_args")]
+        post_install_min_version: Option<StableVersion>,
+
+        /// Output directory.
         out_dir: Utf8PathBuf,
     },
     /// Add checksums to the release JSON
@@ -83,7 +125,7 @@ enum MuktiCommand {
 }
 
 impl MuktiApp {
-    pub async fn exec(self) -> Result<()> {
+    pub(crate) async fn exec(self) -> Result<()> {
         match self.command {
             MuktiCommand::AddRelease {
                 release_url,
@@ -116,6 +158,45 @@ impl MuktiApp {
             MuktiCommand::GenerateInstallManifests { out_dir } => {
                 let release_json = read_release_json(&self.json, false)?;
                 generate_install_manifests(&release_json, &out_dir)?;
+            }
+            MuktiCommand::GenerateInstallScripts {
+                bin_name,
+                base_url,
+                docs_url,
+                env_prefix,
+                min_glibc,
+                post_install_args,
+                post_install_min_version,
+                out_dir,
+            } => {
+                let post_install = match (post_install_args, post_install_min_version) {
+                    (Some(args), Some(min_version)) => Some(PostInstall { args, min_version }),
+                    (None, None) => None,
+                    // clap's requires attributes already reject this.
+                    (Some(_), None) | (None, Some(_)) => {
+                        bail!(
+                            "--post-install-args and --post-install-min-version must be passed together"
+                        );
+                    }
+                };
+                let release_json = read_release_json(&self.json, false)?;
+                let (project_name, _) = single_project(&release_json)?;
+                let project: ProjectName = project_name.parse().wrap_err_with(|| {
+                    format!(
+                        "the project name in {} cannot be used in an install script",
+                        self.json
+                    )
+                })?;
+                let config = InstallScriptConfig {
+                    project,
+                    bin_name,
+                    base_url,
+                    docs_url,
+                    env_prefix,
+                    min_glibc,
+                    post_install,
+                };
+                generate_install_scripts(&config, &out_dir)?;
             }
             MuktiCommand::BackfillChecksums { jobs } => {
                 let mut release_json = read_release_json(&self.json, false)?;

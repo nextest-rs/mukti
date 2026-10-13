@@ -1,0 +1,8 @@
+# Each of these tests runs a shell script against a local server. Set a 120s
+# timeout to deal with a curl or other command that can potentially hang.
+[[profile.default.overrides]]
+filter = "binary_id(integration-tests::install_scripts)"
+slow-timeout = { period = "60s", terminate-after = 2 }
+
+[profile.ci]
+fail-fast = false

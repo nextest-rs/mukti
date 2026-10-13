@@ -1,0 +1,47 @@
+[package]
+name = "integration-tests"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+publish = false
+
+[package.metadata.release]
+release = false
+
+[[bin]]
+name = "mukti-bin-dup"
+path = "test-helpers/mukti-bin-dup.rs"
+test = false
+
+[[bin]]
+name = "mukti-test-helper"
+path = "test-helpers/mukti-test-helper.rs"
+test = false
+
+[[test]]
+name = "install_scripts"
+path = "tests/install_scripts/main.rs"
+harness = false
+
+[dependencies]
+camino = "1.2.6"
+color-eyre = { version = "0.6.5", default-features = false }
+hex = "0.4.3"
+mukti-bin = { path = "../mukti-bin" }
+sha2 = "0.10.9"
+
+[dev-dependencies]
+byte-wrapper = { version = "0.1.0", default-features = false, features = ["hex"] }
+camino-tempfile = "1.4.1"
+eazip = { version = "0.2.6", default-features = false, features = ["std"] }
+flate2 = "1.1.9"
+httptest = "0.16.4"
+libtest-mimic = "0.8.2"
+mukti-metadata = { path = "../mukti-metadata" }
+rcgen = { version = "0.14.10", default-features = false, features = ["aws_lc_rs", "pem"] }
+rustls = { version = "0.23.45", default-features = false, features = ["aws-lc-rs", "std", "tls12"] }
+semver = "1.0.28"
+serde_json = "1.0.151"
+tar = { version = "0.4.46", default-features = false }
+tokio = { version = "1", features = ["io-util", "net", "rt-multi-thread"] }
+tokio-rustls = { version = "0.26.0", default-features = false, features = ["aws-lc-rs", "tls12"] }
