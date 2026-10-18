@@ -17,7 +17,7 @@ hex = "0.4.3"
 mukti-metadata = { path = "../mukti-metadata" }
 reqwest = { version = "0.13", default-features = false, features = ["http2", "rustls", "system-proxy"] }
 semver = "1.0.28"
-serde_json = "1.0.151"
+serde_json = "1.0.152"
 sha2 = "0.10.9"
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
 
