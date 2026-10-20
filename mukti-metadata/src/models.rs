@@ -1,11 +1,14 @@
 // Copyright (c) The mukti Contributors
 // SPDX-License-Identifier: MIT or Apache-2.0
 
-use crate::{VersionRangeComponentError, VersionRangeParseError};
+use crate::{
+    GlibcVersionComponent, GlibcVersionParseError, GlibcVersionParseErrorKind,
+    VersionRangeComponentError, VersionRangeParseError,
+};
 use byte_wrapper::{HexSlice, HexVec};
 use semver::{Version, VersionReq};
 use serde::{de::Visitor, ser::SerializeMap, Deserialize, Serialize, Serializer};
-use std::{borrow::Cow, collections::BTreeMap, fmt, str::FromStr};
+use std::{borrow::Cow, collections::BTreeMap, fmt, num::ParseIntError, str::FromStr};
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct MuktiReleasesJson {
@@ -127,6 +130,99 @@ pub struct ReleaseLocation {
     /// future.
     #[serde(default)]
     pub checksums: BTreeMap<DigestAlgorithm, Digest>,
+
+    /// The oldest glibc the binary runs on.
+    ///
+    /// Only set for `linux-gnu` targets.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_glibc: Option<GlibcVersion>,
+}
+
+pub fn is_linux_gnu_target(target: &str) -> bool {
+    target.contains("-linux-gnu")
+}
+
+/// A glibc version, `MAJOR.MINOR`, for example `2.27`.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct GlibcVersion {
+    pub major: u32,
+    pub minor: u32,
+}
+
+impl GlibcVersion {
+    pub const fn new(major: u32, minor: u32) -> Self {
+        Self { major, minor }
+    }
+}
+
+impl fmt::Display for GlibcVersion {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}.{}", self.major, self.minor)
+    }
+}
+
+impl FromStr for GlibcVersion {
+    type Err = GlibcVersionParseError;
+
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        let Some((major, minor)) = input.split_once('.') else {
+            return Err(GlibcVersionParseError::new(
+                input,
+                GlibcVersionParseErrorKind::NoMinor,
+            ));
+        };
+        let component = |value: &str, component: GlibcVersionComponent| {
+            parse_canonical(value).map_err(|error| {
+                GlibcVersionParseError::new(
+                    input,
+                    GlibcVersionParseErrorKind::Component {
+                        component,
+                        value: value.to_owned(),
+                        error,
+                    },
+                )
+            })
+        };
+        Ok(Self {
+            major: component(major, GlibcVersionComponent::Major)?,
+            minor: component(minor, GlibcVersionComponent::Minor)?,
+        })
+    }
+}
+
+impl Serialize for GlibcVersion {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.collect_str(self)
+    }
+}
+
+impl<'de> Deserialize<'de> for GlibcVersion {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_str(GlibcVersionDeVisitor)
+    }
+}
+
+struct GlibcVersionDeVisitor;
+
+impl Visitor<'_> for GlibcVersionDeVisitor {
+    type Value = GlibcVersion;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(formatter, "a glibc version in the format major.minor")
+    }
+
+    fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        s.parse().map_err(|err| E::custom(err))
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -261,15 +357,18 @@ impl FromStr for VersionRange {
 }
 
 fn parse_component(s: &str, component: VersionRangeKind) -> Result<u64, VersionRangeParseError> {
-    let value: u64 = s.parse().map_err(|err| {
-        VersionRangeParseError::new(s, component, VersionRangeComponentError::ParseInt(err))
-    })?;
+    parse_canonical(s).map_err(|error| VersionRangeParseError::new(s, component, error))
+}
+
+fn parse_canonical<T>(s: &str) -> Result<T, VersionRangeComponentError>
+where
+    T: FromStr<Err = ParseIntError> + ToString + Into<u64> + Copy,
+{
+    let value: T = s.parse().map_err(VersionRangeComponentError::ParseInt)?;
     if value.to_string() != s {
-        return Err(VersionRangeParseError::new(
-            s,
-            component,
-            VersionRangeComponentError::NotCanonical { canonical: value },
-        ));
+        return Err(VersionRangeComponentError::NotCanonical {
+            canonical: value.into(),
+        });
     }
     Ok(value)
 }
@@ -529,6 +628,89 @@ mod tests {
 
         serde_json::from_str::<VersionRange>(r#""0.05""#)
             .expect_err("deserialization rejects a non-canonical range as well");
+    }
+
+    #[test]
+    fn glibc_version_round_trips() {
+        let version: GlibcVersion = "2.27".parse().expect("2.27 parsed");
+        assert_eq!(version, GlibcVersion::new(2, 27));
+        assert_eq!(version.to_string(), "2.27");
+        assert_eq!(
+            serde_json::to_string(&version).expect("serialized"),
+            r#""2.27""#
+        );
+        assert_eq!(
+            serde_json::from_str::<GlibcVersion>(r#""2.27""#).expect("deserialized"),
+            version,
+        );
+        assert!(GlibcVersion::new(2, 27) < GlibcVersion::new(2, 28));
+        assert!(GlibcVersion::new(2, 99) < GlibcVersion::new(3, 0));
+    }
+
+    #[test]
+    fn glibc_version_errors_say_what_is_wrong() {
+        let cases = [
+            ("2", ""),
+            ("02.27", ": major component `02` is invalid: not in canonical form (expected `2`)"),
+            ("2.+27", ": minor component `+27` is invalid: not in canonical form (expected `27`)"),
+            ("2.x", ": minor component `x` is invalid: invalid digit found in string"),
+            ("2.", ": minor component `` is invalid: cannot parse integer from empty string"),
+            ("2.27.1", ": minor component `27.1` is invalid: invalid digit found in string"),
+            (
+                "99999999999.1",
+                ": major component `99999999999` is invalid: number too large to fit in target type",
+            ),
+        ];
+        for (input, cause) in cases {
+            let error = input
+                .parse::<GlibcVersion>()
+                .expect_err("invalid glibc version rejected");
+            assert_eq!(
+                error.to_string(),
+                format!(
+                    "invalid glibc version `{input}` (expected MAJOR.MINOR, for example 2.27){cause}"
+                ),
+            );
+        }
+        serde_json::from_str::<GlibcVersion>(r#""2.027""#)
+            .expect_err("deserialization rejects a non-canonical version as well");
+    }
+
+    #[test]
+    fn min_glibc_is_optional_in_json() {
+        let json = r#"{"target": "x86_64-unknown-linux-musl", "format": "tar.gz", "url": "https://example.com/a.tar.gz"}"#;
+        let location: ReleaseLocation = serde_json::from_str(json).expect("deserialized");
+        assert_eq!(location.min_glibc, None);
+        let serialized = serde_json::to_string(&location).expect("serialized");
+        assert!(
+            !serialized.contains("min_glibc"),
+            "an unset floor is omitted: {serialized}"
+        );
+
+        let json = r#"{"target": "x86_64-unknown-linux-gnu", "format": "tar.gz", "url": "https://example.com/a.tar.gz", "min_glibc": "2.27"}"#;
+        let location: ReleaseLocation = serde_json::from_str(json).expect("deserialized");
+        assert_eq!(location.min_glibc, Some(GlibcVersion::new(2, 27)));
+    }
+
+    #[test]
+    fn linux_gnu_targets() {
+        for target in [
+            "x86_64-unknown-linux-gnu",
+            "aarch64-unknown-linux-gnu",
+            "riscv64gc-unknown-linux-gnu",
+            "armv7-unknown-linux-gnueabihf",
+        ] {
+            assert!(is_linux_gnu_target(target), "{target}");
+        }
+        for target in [
+            "x86_64-unknown-linux-musl",
+            "x86_64-pc-windows-gnu",
+            "x86_64-pc-windows-msvc",
+            "universal-apple-darwin",
+            "x86_64-unknown-illumos",
+        ] {
+            assert!(!is_linux_gnu_target(target), "{target}");
+        }
     }
 
     fn get_latest_matching_version<'a>(

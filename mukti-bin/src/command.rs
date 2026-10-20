@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{
-    checksums::{backfill_checksums, fetch_release_checksums},
+    checksums::{backfill, fetch_release_archives},
     errors::NameValueParseError,
     manifests::generate_install_manifests,
     redirects::{generate_redirects, RedirectFlavor},
@@ -10,7 +10,7 @@ use crate::{
 };
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand};
-use color_eyre::Result;
+use color_eyre::{eyre::bail, Result};
 use semver::Version;
 use std::str::FromStr;
 
@@ -74,8 +74,9 @@ enum MuktiCommand {
         )]
         out_dir: Utf8PathBuf,
     },
-    /// Add checksums to the release JSON
-    BackfillChecksums {
+    /// Add missing checksums and glibc floors to the release JSON
+    #[clap(alias = "backfill-checksums")]
+    Backfill {
         /// Number of release files to download in parallel.
         #[clap(long, short, default_value = "8")]
         jobs: usize,
@@ -94,7 +95,7 @@ impl MuktiApp {
             } => {
                 let mut release_json = read_release_json(&self.json, true)?;
 
-                let archives = fetch_release_checksums(&archive_prefix, archives, jobs).await?;
+                let archives = fetch_release_archives(&archive_prefix, archives, jobs).await?;
 
                 update_release_json(
                     &mut release_json,
@@ -117,10 +118,36 @@ impl MuktiApp {
                 let release_json = read_release_json(&self.json, false)?;
                 generate_install_manifests(&release_json, &out_dir)?;
             }
-            MuktiCommand::BackfillChecksums { jobs } => {
+            MuktiCommand::Backfill { jobs } => {
                 let mut release_json = read_release_json(&self.json, false)?;
-                backfill_checksums(&mut release_json, jobs).await;
-                write_releases_json(&release_json, &self.json)?;
+                let outcome = backfill(&mut release_json, jobs).await;
+                let failures: Vec<String> = outcome
+                    .failures
+                    .iter()
+                    .map(|failure| format!("  {failure}"))
+                    .collect();
+
+                if let Err(error) = write_releases_json(&release_json, &self.json) {
+                    // Combine failures tracked in `failures` with any errors
+                    // returned by `write_releases_json`.
+                    if failures.is_empty() {
+                        return Err(error);
+                    }
+                    bail!(
+                        "{error:#}\n\
+                         also, {} archive(s) could not be backfilled:\n{}",
+                        failures.len(),
+                        failures.join("\n"),
+                    );
+                }
+                if !failures.is_empty() {
+                    bail!(
+                        "{} archive(s) could not be backfilled; the rest were written to {}:\n{}",
+                        failures.len(),
+                        self.json,
+                        failures.join("\n"),
+                    );
+                }
             }
         }
 
@@ -194,10 +221,16 @@ fn name_value_parse(input: &str, delimiter: char) -> Result<(String, String), Na
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::glibc::test_helpers::{glibc_binary, tar_gz};
     use camino::Utf8Path;
     use hex_literal::hex;
     use httptest::{matchers::request, responders::status_code, Expectation, Server};
-    use mukti_metadata::{Digest, DigestAlgorithm, MuktiReleasesJson};
+    use mukti_metadata::{
+        Digest, DigestAlgorithm, GlibcVersion, MuktiProject, MuktiReleasesJson, ReleaseLocation,
+        ReleaseRangeData, ReleaseStatus, ReleaseVersionData, VersionRange,
+    };
+    use sha2::Digest as _;
+    use std::collections::BTreeMap;
 
     static FIXTURE_JSON: &str = include_str!("../../fixtures/mukti-releases.json");
     const ARCHIVE_BODY: &str = "hello";
@@ -208,7 +241,23 @@ mod tests {
     const WINDOWS_ARCHIVE: &str = "mukti-bin-0.5.4-x86_64-pc-windows-msvc.zip";
 
     async fn add_release(json: &Utf8Path, archive_prefix: &str) -> Result<()> {
-        let app = MuktiApp::try_parse_from([
+        add_release_with(
+            json,
+            archive_prefix,
+            &[
+                format!("x86_64-unknown-linux-musl:tar.gz={LINUX_ARCHIVE}"),
+                format!("x86_64-pc-windows-msvc:zip={WINDOWS_ARCHIVE}"),
+            ],
+        )
+        .await
+    }
+
+    async fn add_release_with(
+        json: &Utf8Path,
+        archive_prefix: &str,
+        archives: &[String],
+    ) -> Result<()> {
+        let mut args = vec![
             "mukti-bin",
             "--json",
             json.as_str(),
@@ -219,13 +268,23 @@ mod tests {
             archive_prefix,
             "--version",
             "0.5.4",
-            "--archive",
-            &format!("x86_64-unknown-linux-musl:tar.gz={LINUX_ARCHIVE}"),
-            "--archive",
-            &format!("x86_64-pc-windows-msvc:zip={WINDOWS_ARCHIVE}"),
-        ])
-        .expect("arguments parsed");
+        ];
+        for archive in archives {
+            args.extend(["--archive", archive.as_str()]);
+        }
+        let app = MuktiApp::try_parse_from(args).expect("arguments parsed");
         app.exec().await
+    }
+
+    async fn backfill_json(json: &Utf8Path) -> Result<()> {
+        let app = MuktiApp::try_parse_from(["mukti-bin", "--json", json.as_str(), "backfill"])
+            .expect("arguments parsed");
+        app.exec().await
+    }
+
+    fn read_releases(json: &Utf8Path) -> MuktiReleasesJson {
+        let contents = std::fs::read_to_string(json).expect("releases JSON read");
+        serde_json::from_str(&contents).expect("releases JSON deserialized")
     }
 
     fn expect_archive(server: &Server, name: &str) {
@@ -293,7 +352,8 @@ mod tests {
             .expect_err("a missing archive fails the release");
         let message = format!("{error:#}");
         assert!(
-            message.contains("failed to fetch 1 of 2 archive(s)")
+            message.contains("1 of 2 archive(s) failed, so the release was not added")
+                && message.contains("failed to download 1 archive(s)")
                 && message.contains(&format!("{prefix}/{WINDOWS_ARCHIVE}: "))
                 && message.contains("404 Not Found"),
             "error: {message}",
@@ -315,9 +375,409 @@ mod tests {
             .expect_err("relative archive URLs fail the release");
         let message = format!("{error:#}");
         assert!(
-            message.contains("failed to fetch 2 of 2 archive(s)"),
+            message.contains("2 of 2 archive(s) failed, so the release was not added"),
             "error: {message}",
         );
         assert!(!json.exists(), "the releases JSON was not created");
+    }
+
+    #[tokio::test]
+    async fn add_release_records_the_glibc_floor() {
+        let dir = camino_tempfile::tempdir().expect("temp dir created");
+        let json = dir.path().join("releases.json");
+        std::fs::write(&json, FIXTURE_JSON).expect("fixture JSON written");
+        let gnu_archive = "mukti-bin-0.5.4-x86_64-unknown-linux-gnu.tar.gz";
+        let server = Server::run();
+        server.expect(
+            Expectation::matching(request::method_path("GET", format!("/{gnu_archive}")))
+                .respond_with(status_code(200).body(tar_gz(&[("mukti-bin", &glibc_binary())]))),
+        );
+        expect_archive(&server, LINUX_ARCHIVE);
+        let prefix = format!("http://{}", server.addr());
+
+        add_release_with(
+            &json,
+            &prefix,
+            &[
+                format!("x86_64-unknown-linux-gnu:tar.gz={gnu_archive}"),
+                format!("x86_64-unknown-linux-musl:tar.gz={LINUX_ARCHIVE}"),
+            ],
+        )
+        .await
+        .expect("release added");
+
+        let releases = read_releases(&json);
+        let version: Version = "0.5.4".parse().expect("version parsed");
+        let (_, data) = releases.projects["mukti"]
+            .get_version_data(&version)
+            .expect("0.5.4 was added");
+        let floors: Vec<_> = data
+            .locations
+            .iter()
+            .map(|location| (location.target.as_str(), location.min_glibc))
+            .collect();
+        assert_eq!(
+            floors,
+            [
+                ("x86_64-unknown-linux-gnu", Some(GlibcVersion::new(2, 27))),
+                ("x86_64-unknown-linux-musl", None),
+            ],
+        );
+    }
+
+    #[tokio::test]
+    async fn add_release_fails_if_the_glibc_floor_cannot_be_computed() {
+        let gnu_archive = "mukti-bin-0.5.4-x86_64-unknown-linux-gnu.tar.gz";
+        let cases = [
+            (
+                format!("x86_64-unknown-linux-gnu:zip={gnu_archive}"),
+                false,
+                "mukti can only compute the glibc floor of a tar.gz archive",
+            ),
+            (
+                format!("x86_64-unknown-linux-gnu:tar.gz={gnu_archive}"),
+                true,
+                "could not compute their glibc floor",
+            ),
+        ];
+        for (archive, downloads, expected) in cases {
+            let dir = camino_tempfile::tempdir().expect("temp dir created");
+            let json = dir.path().join("releases.json");
+            std::fs::write(&json, FIXTURE_JSON).expect("fixture JSON written");
+
+            let server = Server::run();
+            if downloads {
+                expect_archive(&server, gnu_archive);
+            }
+            let prefix = format!("http://{}", server.addr());
+
+            let error = add_release_with(&json, &prefix, std::slice::from_ref(&archive))
+                .await
+                .expect_err("the release is not added");
+            let message = format!("{error:#}");
+            assert!(message.contains(expected), "{archive}: {message}");
+            assert!(
+                !message.contains("has been uploaded"),
+                "{archive}: a floor failure does not blame the upload: {message}",
+            );
+            assert_eq!(
+                std::fs::read_to_string(&json).expect("releases JSON read"),
+                FIXTURE_JSON,
+                "{archive}: the releases JSON is untouched",
+            );
+        }
+    }
+
+    fn location(
+        target: &str,
+        format: &str,
+        url: String,
+        sha256: Option<Digest>,
+        min_glibc: Option<GlibcVersion>,
+    ) -> ReleaseLocation {
+        ReleaseLocation {
+            target: target.to_owned(),
+            format: format.to_owned(),
+            url,
+            checksums: sha256
+                .map(|sha256| {
+                    BTreeMap::from([
+                        (DigestAlgorithm::SHA256, sha256),
+                        (DigestAlgorithm::BLAKE2B, Digest::new_static(&[0x00])),
+                    ])
+                })
+                .unwrap_or_default(),
+            min_glibc,
+        }
+    }
+
+    const BACKFILL_VERSION: &str = "0.5.4";
+
+    fn write_single_version_json(json: &Utf8Path, locations: Vec<ReleaseLocation>) {
+        let version: Version = BACKFILL_VERSION.parse().expect("version parsed");
+        let releases = MuktiReleasesJson {
+            projects: BTreeMap::from([(
+                "mukti".to_owned(),
+                MuktiProject {
+                    latest: None,
+                    ranges: BTreeMap::from([(
+                        VersionRange::from_version(&version),
+                        ReleaseRangeData {
+                            latest: version.clone(),
+                            is_prerelease: false,
+                            versions: BTreeMap::from([(
+                                version.clone(),
+                                ReleaseVersionData {
+                                    release_url: "https://example.com".to_owned(),
+                                    status: ReleaseStatus::Active,
+                                    locations,
+                                    metadata: serde_json::Value::Null,
+                                },
+                            )]),
+                        },
+                    )]),
+                },
+            )]),
+        };
+        write_releases_json(&releases, json).expect("releases JSON written");
+    }
+
+    #[derive(Debug, Eq, PartialEq)]
+    struct LocationSummary {
+        target: String,
+        sha256: Option<Digest>,
+        min_glibc: Option<GlibcVersion>,
+    }
+
+    fn summarize(json: &Utf8Path) -> Vec<LocationSummary> {
+        let releases = read_releases(json);
+        let version: Version = BACKFILL_VERSION.parse().expect("version parsed");
+        let (_, data) = releases.projects["mukti"]
+            .get_version_data(&version)
+            .expect("the version is present");
+        data.locations
+            .iter()
+            .map(|location| LocationSummary {
+                target: location.target.clone(),
+                sha256: location.checksums.get(&DigestAlgorithm::SHA256).cloned(),
+                min_glibc: location.min_glibc,
+            })
+            .collect()
+    }
+
+    fn serve(
+        server: &Server,
+        path: &str,
+        response: impl httptest::responders::Responder + 'static,
+    ) {
+        server.expect(
+            Expectation::matching(request::method_path("GET", path.to_owned()))
+                .respond_with(response),
+        );
+    }
+
+    #[tokio::test]
+    async fn backfill_fills_in_checksums_and_glibc_floors() {
+        let server = Server::run();
+        let gnu_body = tar_gz(&[("mukti-bin", &glibc_binary())]);
+        let gnu_sha256 = Digest::new(sha2::Sha256::digest(&gnu_body).to_vec());
+        serve(
+            &server,
+            "/gnu-no-floor.tar.gz",
+            status_code(200).body(gnu_body.clone()),
+        );
+        serve(
+            &server,
+            "/gnu-mismatch.tar.gz",
+            status_code(200).body(gnu_body),
+        );
+        serve(
+            &server,
+            "/musl-no-checksums.tar.gz",
+            status_code(200).body(ARCHIVE_BODY),
+        );
+        let url = |path: &str| format!("http://{}{path}", server.addr());
+        let dir = camino_tempfile::tempdir().expect("temp dir created");
+        let json = dir.path().join("releases.json");
+        write_single_version_json(
+            &json,
+            vec![
+                location(
+                    "x86_64-unknown-linux-gnu",
+                    "tar.gz",
+                    url("/gnu-no-floor.tar.gz"),
+                    Some(gnu_sha256.clone()),
+                    None,
+                ),
+                location(
+                    "aarch64-unknown-linux-gnu",
+                    "tar.gz",
+                    url("/gnu-mismatch.tar.gz"),
+                    Some(ARCHIVE_SHA256),
+                    None,
+                ),
+                location(
+                    "x86_64-unknown-linux-musl",
+                    "tar.gz",
+                    url("/musl-no-checksums.tar.gz"),
+                    None,
+                    None,
+                ),
+                location(
+                    "riscv64gc-unknown-linux-gnu",
+                    "tar.gz",
+                    url("/already-done.tar.gz"),
+                    Some(ARCHIVE_SHA256),
+                    Some(GlibcVersion::new(2, 27)),
+                ),
+            ],
+        );
+
+        let error = backfill_json(&json)
+            .await
+            .expect_err("a checksum mismatch fails the backfill");
+        let message = format!("{error:#}");
+        assert!(
+            message.contains("1 archive(s) could not be backfilled")
+                && message.contains(&format!(
+                    "{}: the downloaded archive has SHA-256 {gnu_sha256}, but the release JSON records {ARCHIVE_SHA256}",
+                    url("/gnu-mismatch.tar.gz"),
+                )),
+            "error: {message}",
+        );
+
+        assert_eq!(
+            summarize(&json),
+            [
+                LocationSummary {
+                    target: "x86_64-unknown-linux-gnu".to_owned(),
+                    sha256: Some(gnu_sha256),
+                    min_glibc: Some(GlibcVersion::new(2, 27)),
+                },
+                LocationSummary {
+                    target: "aarch64-unknown-linux-gnu".to_owned(),
+                    sha256: Some(ARCHIVE_SHA256),
+                    min_glibc: None,
+                },
+                LocationSummary {
+                    target: "x86_64-unknown-linux-musl".to_owned(),
+                    sha256: Some(ARCHIVE_SHA256),
+                    min_glibc: None,
+                },
+                LocationSummary {
+                    target: "riscv64gc-unknown-linux-gnu".to_owned(),
+                    sha256: Some(ARCHIVE_SHA256),
+                    min_glibc: Some(GlibcVersion::new(2, 27)),
+                },
+            ],
+        );
+    }
+
+    #[tokio::test]
+    async fn backfill_gives_each_failure_its_own_remedy() {
+        let server = Server::run();
+        // Each download is tried three times.
+        server.expect(
+            Expectation::matching(request::method_path("GET", "/gnu-missing.tar.gz"))
+                .times(3)
+                .respond_with(status_code(404)),
+        );
+        let not_elf = tar_gz(&[("README.md", b"no binary here")]);
+        serve(
+            &server,
+            "/gnu-not-elf.tar.gz",
+            status_code(200).body(not_elf),
+        );
+        let gnu_body = tar_gz(&[("mukti-bin", &glibc_binary())]);
+        serve(
+            &server,
+            "/gnu-mismatch.tar.gz",
+            status_code(200).body(gnu_body),
+        );
+        serve(&server, "/musl.tar.gz", status_code(200).body(ARCHIVE_BODY));
+        let url = |path: &str| format!("http://{}{path}", server.addr());
+        let dir = camino_tempfile::tempdir().expect("temp dir created");
+        let json = dir.path().join("releases.json");
+        write_single_version_json(
+            &json,
+            vec![
+                location(
+                    "x86_64-unknown-linux-gnu",
+                    "tar.gz",
+                    url("/gnu-missing.tar.gz"),
+                    None,
+                    None,
+                ),
+                location(
+                    "aarch64-unknown-linux-gnu",
+                    "tar.gz",
+                    url("/gnu-not-elf.tar.gz"),
+                    None,
+                    None,
+                ),
+                location(
+                    "riscv64gc-unknown-linux-gnu",
+                    "tar.gz",
+                    url("/gnu-mismatch.tar.gz"),
+                    Some(ARCHIVE_SHA256),
+                    None,
+                ),
+                location(
+                    "armv7-unknown-linux-gnueabihf",
+                    "zip",
+                    url("/gnu.zip"),
+                    None,
+                    None,
+                ),
+                location(
+                    "x86_64-unknown-linux-musl",
+                    "tar.gz",
+                    url("/musl.tar.gz"),
+                    None,
+                    None,
+                ),
+            ],
+        );
+
+        let error = backfill_json(&json)
+            .await
+            .expect_err("failed archives fail the backfill");
+        // Redact information that varies by run.
+        let message = format!("{error:#}")
+            .replace(json.as_str(), "[releases.json]")
+            .replace(&server.addr().to_string(), "[server]");
+        insta::assert_snapshot!("backfill_failure_message", message);
+        insta::assert_debug_snapshot!("backfill_failure_written", summarize(&json));
+    }
+
+    #[tokio::test]
+    async fn backfill_downloads_nothing_once_complete() {
+        // Each expectation allows exactly one request, so if an archive is
+        // fetched a second time the test fails.
+        let server = Server::run();
+        let gnu_body = tar_gz(&[("mukti-bin", &glibc_binary())]);
+        serve(&server, "/gnu.tar.gz", status_code(200).body(gnu_body));
+        serve(&server, "/musl.tar.gz", status_code(200).body(ARCHIVE_BODY));
+        let url = |path: &str| format!("http://{}{path}", server.addr());
+        let dir = camino_tempfile::tempdir().expect("temp dir created");
+        let json = dir.path().join("releases.json");
+        write_single_version_json(
+            &json,
+            vec![
+                location(
+                    "x86_64-unknown-linux-gnu",
+                    "tar.gz",
+                    url("/gnu.tar.gz"),
+                    None,
+                    None,
+                ),
+                location(
+                    "x86_64-unknown-linux-musl",
+                    "tar.gz",
+                    url("/musl.tar.gz"),
+                    None,
+                    None,
+                ),
+            ],
+        );
+
+        backfill_json(&json)
+            .await
+            .expect("the first backfill succeeds");
+        let after_first = std::fs::read_to_string(&json).expect("releases JSON read");
+        backfill_json(&json)
+            .await
+            .expect("the second backfill succeeds");
+        assert_eq!(
+            std::fs::read_to_string(&json).expect("releases JSON read"),
+            after_first,
+            "a second backfill changes nothing",
+        );
+        assert!(
+            summarize(&json)
+                .iter()
+                .all(|summary| summary.sha256.is_some()),
+            "every location has a checksum",
+        );
     }
 }

@@ -47,3 +47,52 @@ pub enum VersionRangeComponentError {
     #[error("not in canonical form (expected `{canonical}`)")]
     NotCanonical { canonical: u64 },
 }
+
+// Note: for this error, the message includes the cause, because clap doesn't
+// print out the cause.
+#[derive(Debug, Error)]
+#[non_exhaustive]
+#[error("invalid glibc version `{input}` (expected MAJOR.MINOR, for example 2.27){kind}")]
+pub struct GlibcVersionParseError {
+    pub input: String,
+
+    pub kind: GlibcVersionParseErrorKind,
+}
+
+impl GlibcVersionParseError {
+    pub(crate) fn new(input: &str, kind: GlibcVersionParseErrorKind) -> Self {
+        Self {
+            input: input.to_owned(),
+            kind,
+        }
+    }
+}
+
+#[derive(Debug, Error)]
+#[non_exhaustive]
+pub enum GlibcVersionParseErrorKind {
+    #[error("")]
+    NoMinor,
+
+    #[error(": {} component `{value}` is invalid: {error}", .component.description())]
+    Component {
+        component: GlibcVersionComponent,
+        value: String,
+        error: VersionRangeComponentError,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum GlibcVersionComponent {
+    Major,
+    Minor,
+}
+
+impl GlibcVersionComponent {
+    pub fn description(self) -> &'static str {
+        match self {
+            Self::Major => "major",
+            Self::Minor => "minor",
+        }
+    }
+}

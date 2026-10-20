@@ -7,7 +7,7 @@ mukti-install-manifest 1
 project mukti
 version 0.5.1
 status active
-archive x86_64-unknown-linux-gnu tar.gz 57ad1a62e3ed67dc2a8c8affe3911c48ddd8b1b5597706d99b32edab5bc6386f https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.1/mukti-bin-0.5.1-x86_64-unknown-linux-gnu.tar.gz
+archive x86_64-unknown-linux-gnu tar.gz 57ad1a62e3ed67dc2a8c8affe3911c48ddd8b1b5597706d99b32edab5bc6386f https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.1/mukti-bin-0.5.1-x86_64-unknown-linux-gnu.tar.gz min-glibc=2.17
 archive x86_64-pc-windows-msvc tar.gz ea358dad39136beda81eff28b2d0bd87e1c0314c272c1ec1f3abd664791f840a https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.1/
 archive x86_64-pc-windows-msvc zip a63f31e9481ee0ccd660e2d853d0da16bb1a84e754d04fa357acefb674d1f40c https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.1/mukti-bin-0.5.1-x86_64-pc-windows-msvc.zip
 
@@ -16,7 +16,7 @@ mukti-install-manifest 1
 project mukti
 version 0.5.2
 status yanked
-archive x86_64-unknown-linux-gnu tar.gz 64b5e7cb4cddee9cf49b0f5b178b3f7abe45b9d7909125d45a6bdbf005df55b5 https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.2/mukti-bin-0.5.2-x86_64-unknown-linux-gnu.tar.gz
+archive x86_64-unknown-linux-gnu tar.gz 64b5e7cb4cddee9cf49b0f5b178b3f7abe45b9d7909125d45a6bdbf005df55b5 https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.2/mukti-bin-0.5.2-x86_64-unknown-linux-gnu.tar.gz min-glibc=2.17
 archive x86_64-pc-windows-msvc tar.gz 63c6a9aec136a2f774b3a7e9746cc1ecaeb6279a747921e2b05ba7f618ab2100 https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.2/
 archive x86_64-pc-windows-msvc zip 5b0e6113877fa5a5a0ff8684269a2fa86a21945ea38e202acfe63dad877c4e70 https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.2/mukti-bin-0.5.2-x86_64-pc-windows-msvc.zip
 
@@ -25,7 +25,7 @@ mukti-install-manifest 1
 project mukti
 version 0.5.3
 status active
-archive x86_64-unknown-linux-gnu tar.gz 28befb874c236ffc974db1ccf5b6cde0ec7bb907cd35d77565afebcd60f71da3 https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/mukti-bin-0.5.3-x86_64-unknown-linux-gnu.tar.gz
+archive x86_64-unknown-linux-gnu tar.gz 28befb874c236ffc974db1ccf5b6cde0ec7bb907cd35d77565afebcd60f71da3 https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/mukti-bin-0.5.3-x86_64-unknown-linux-gnu.tar.gz min-glibc=2.17
 archive x86_64-pc-windows-msvc tar.gz ca33add0f5f0b5f842301e6733cbcb58b56a7e094e1de7464fd39e1f705e5cc4 https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/
 archive x86_64-pc-windows-msvc zip b1c444cf8ec46a916e928accf0d6f8c846d7e7d9b2e05906973edf6f147ae2b8 https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/mukti-bin-0.5.3-x86_64-pc-windows-msvc.zip
 
@@ -34,7 +34,7 @@ mukti-install-manifest 1
 project mukti
 version 0.5.3
 status active
-archive x86_64-unknown-linux-gnu tar.gz 28befb874c236ffc974db1ccf5b6cde0ec7bb907cd35d77565afebcd60f71da3 https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/mukti-bin-0.5.3-x86_64-unknown-linux-gnu.tar.gz
+archive x86_64-unknown-linux-gnu tar.gz 28befb874c236ffc974db1ccf5b6cde0ec7bb907cd35d77565afebcd60f71da3 https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/mukti-bin-0.5.3-x86_64-unknown-linux-gnu.tar.gz min-glibc=2.17
 archive x86_64-pc-windows-msvc tar.gz ca33add0f5f0b5f842301e6733cbcb58b56a7e094e1de7464fd39e1f705e5cc4 https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/
 archive x86_64-pc-windows-msvc zip b1c444cf8ec46a916e928accf0d6f8c846d7e7d9b2e05906973edf6f147ae2b8 https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/mukti-bin-0.5.3-x86_64-pc-windows-msvc.zip
 
@@ -43,7 +43,7 @@ mukti-install-manifest 1
 project mukti
 version 0.6.0-alpha.1
 status active
-archive x86_64-unknown-linux-gnu tar.gz c5ee772b5dc421abbc7b0468d6d8c71b8b076f5c96d7ba7c5d780083f51d0ad4 https://github.com/nextest-rs/mukti/releases/mukti-bin-0.6.0-alpha.1/mukti-bin-0.5.3-x86_64-unknown-linux-gnu.tar.gz
+archive x86_64-unknown-linux-gnu tar.gz c5ee772b5dc421abbc7b0468d6d8c71b8b076f5c96d7ba7c5d780083f51d0ad4 https://github.com/nextest-rs/mukti/releases/mukti-bin-0.6.0-alpha.1/mukti-bin-0.5.3-x86_64-unknown-linux-gnu.tar.gz min-glibc=2.17
 archive x86_64-pc-windows-msvc tar.gz d915866a879e821ece10d7e37760b61606437d9d382222490ebd6682b22ce025 https://github.com/nextest-rs/mukti/releases/mukti-bin-0.6.0-alpha.1/
 archive x86_64-pc-windows-msvc zip 66a5677cf138f46ec24bdcef7f4a8853a4018487767c4b40a48130d282d4707c https://github.com/nextest-rs/mukti/releases/mukti-bin-0.6.0-alpha.1/mukti-bin-0.5.3-x86_64-pc-windows-msvc.zip
 
@@ -52,6 +52,6 @@ mukti-install-manifest 1
 project mukti
 version 0.5.3
 status active
-archive x86_64-unknown-linux-gnu tar.gz 28befb874c236ffc974db1ccf5b6cde0ec7bb907cd35d77565afebcd60f71da3 https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/mukti-bin-0.5.3-x86_64-unknown-linux-gnu.tar.gz
+archive x86_64-unknown-linux-gnu tar.gz 28befb874c236ffc974db1ccf5b6cde0ec7bb907cd35d77565afebcd60f71da3 https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/mukti-bin-0.5.3-x86_64-unknown-linux-gnu.tar.gz min-glibc=2.17
 archive x86_64-pc-windows-msvc tar.gz ca33add0f5f0b5f842301e6733cbcb58b56a7e094e1de7464fd39e1f705e5cc4 https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/
 archive x86_64-pc-windows-msvc zip b1c444cf8ec46a916e928accf0d6f8c846d7e7d9b2e05906973edf6f147ae2b8 https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.3/mukti-bin-0.5.3-x86_64-pc-windows-msvc.zip

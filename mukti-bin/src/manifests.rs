@@ -8,7 +8,9 @@ use crate::{
 };
 use camino::Utf8Path;
 use color_eyre::eyre::{bail, Context, Result};
-use mukti_metadata::{DigestAlgorithm, MuktiProject, MuktiReleasesJson, ReleaseStatus};
+use mukti_metadata::{
+    is_linux_gnu_target, DigestAlgorithm, MuktiProject, MuktiReleasesJson, ReleaseStatus,
+};
 use semver::Version;
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -113,7 +115,7 @@ fn render_manifest(project_name: &str, resolved: &ResolvedSpec<'_>) -> Result<St
         let Some(sha256) = location.checksums.get(&DigestAlgorithm::SHA256) else {
             bail!(
                 "the release JSON has no sha256 checksum for {}.{}; \
-                 run `mukti-bin backfill-checksums`, then generate the manifests again",
+                 run `mukti-bin backfill`, then generate the manifests again",
                 location.target,
                 location.format,
             );
@@ -131,9 +133,31 @@ fn render_manifest(project_name: &str, resolved: &ResolvedSpec<'_>) -> Result<St
             );
         }
 
+        let min_glibc = match (is_linux_gnu_target(&location.target), location.min_glibc) {
+            (true, Some(min_glibc)) => format!(" min-glibc={min_glibc}"),
+            (true, None) => {
+                bail!(
+                    "the release JSON has no glibc floor for {}.{}; \
+                     run `mukti-bin backfill` (or, if it cannot compute the floor, set min_glibc \
+                     by hand), then generate the manifests again",
+                    location.target,
+                    location.format,
+                );
+            }
+            (false, None) => String::new(),
+            (false, Some(min_glibc)) => {
+                bail!(
+                    "the release JSON has a glibc floor ({min_glibc}) for {}.{}, \
+                     but only linux-gnu targets link against glibc",
+                    location.target,
+                    location.format,
+                );
+            }
+        };
+
         writeln!(
             out,
-            "archive {} {} {} {}",
+            "archive {} {} {} {}{min_glibc}",
             location.target, location.format, sha256, location.url,
         )?;
     }
@@ -316,10 +340,60 @@ mod tests {
         assert!(
             message.contains("for version 0.5.3")
                 && message.contains("no sha256 checksum for x86_64-unknown-linux-gnu.tar.gz")
-                && message.contains("mukti-bin backfill-checksums"),
+                && message.contains("mukti-bin backfill`"),
             "error: {message}",
         );
         assert_eq!(read_tree(out_dir), before, "nothing is written or removed");
+    }
+
+    #[test]
+    fn glibc_floor_errors_change_nothing() {
+        let missing = {
+            let mut json = fixture_json();
+            let location = first_location(&mut json);
+            assert_eq!(location.target, "x86_64-unknown-linux-gnu");
+            location.min_glibc = None;
+            json
+        };
+        let not_gnu = {
+            let mut json = fixture_json();
+            let location = first_location(&mut json);
+            location.target = "x86_64-unknown-linux-musl".to_owned();
+            json
+        };
+        let cases = [
+            (
+                missing,
+                "no glibc floor for x86_64-unknown-linux-gnu.tar.gz",
+                "mukti-bin backfill",
+            ),
+            (
+                not_gnu,
+                "glibc floor (2.17) for x86_64-unknown-linux-musl.tar.gz",
+                "only linux-gnu targets link against glibc",
+            ),
+        ];
+
+        for (json, expected, remedy) in cases {
+            let temp_dir = temp_out_dir();
+            let out_dir = temp_dir.path();
+            write(
+                &out_dir.join("0.4").join(MANIFEST_FILE_NAME),
+                &manifest("mukti", "0.4.0"),
+            );
+            let before = read_tree(out_dir);
+
+            let error = generate_install_manifests(&json, out_dir)
+                .expect_err("an invalid glibc floor is an error");
+            let message = format!("{error:#}");
+            assert!(
+                message.contains("for version 0.5.3")
+                    && message.contains(expected)
+                    && message.contains(remedy),
+                "error: {message}",
+            );
+            assert_eq!(read_tree(out_dir), before, "nothing is written or removed");
+        }
     }
 
     #[test]

@@ -3,7 +3,7 @@
 
 //! Add and update to release JSON.
 
-use crate::checksums::ArchiveWithChecksums;
+use crate::checksums::FetchedArchive;
 use atomicwrites::{AtomicFile, OverwriteBehavior};
 use camino::Utf8Path;
 use color_eyre::eyre::{bail, Result, WrapErr};
@@ -50,7 +50,7 @@ pub(crate) fn update_release_json(
     release_json: &mut MuktiReleasesJson,
     release_url: &str,
     version: &Version,
-    archives: Vec<ArchiveWithChecksums>,
+    archives: Vec<FetchedArchive>,
     path: &Utf8Path,
 ) -> Result<()> {
     if archives.is_empty() {
@@ -90,6 +90,7 @@ pub(crate) fn update_release_json(
                 format: archive.archive.target_format.format.clone(),
                 url: archive.url,
                 checksums: archive.checksums.to_checksum_map(),
+                min_glibc: archive.min_glibc,
             })
             .collect();
         data.versions.insert(
