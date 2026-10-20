@@ -1,0 +1,39 @@
+---
+source: mukti-bin/src/command.rs
+expression: summarize(&json)
+---
+[
+    LocationSummary {
+        target: "x86_64-unknown-linux-gnu",
+        sha256: None,
+        min_glibc: None,
+    },
+    LocationSummary {
+        target: "aarch64-unknown-linux-gnu",
+        sha256: None,
+        min_glibc: None,
+    },
+    LocationSummary {
+        target: "riscv64gc-unknown-linux-gnu",
+        sha256: Some(
+            Digest(
+                "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+            ),
+        ),
+        min_glibc: None,
+    },
+    LocationSummary {
+        target: "armv7-unknown-linux-gnueabihf",
+        sha256: None,
+        min_glibc: None,
+    },
+    LocationSummary {
+        target: "x86_64-unknown-linux-musl",
+        sha256: Some(
+            Digest(
+                "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+            ),
+        ),
+        min_glibc: None,
+    },
+]

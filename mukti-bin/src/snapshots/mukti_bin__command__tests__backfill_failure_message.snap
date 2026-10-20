@@ -1,0 +1,13 @@
+---
+source: mukti-bin/src/command.rs
+expression: message
+---
+4 archive(s) could not be backfilled; the rest were written to [releases.json]:
+  http://[server]/gnu-mismatch.tar.gz: the downloaded archive has SHA-256 26d35d3eccb107779bd79514bd80a5b467a28c51bd772f1d3cf5df852f83cae0, but the release JSON records 2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824; this location was not updated
+    find out why the archive changed; if the recorded checksums are wrong, remove them from the release JSON and run `mukti-bin backfill` again
+  http://[server]/gnu-missing.tar.gz: failed to download: HTTP status client error (404 Not Found)
+    this may be temporary; run `mukti-bin backfill` again to retry
+  http://[server]/gnu-not-elf.tar.gz: downloaded, but could not compute the glibc floor: the archive contains no ELF files
+    set min_glibc for this archive in the release JSON by hand
+  http://[server]/gnu.zip: armv7-unknown-linux-gnueabihf.zip is a glibc build, but mukti can only compute the glibc floor of a tar.gz archive
+    set min_glibc for this archive in the release JSON by hand

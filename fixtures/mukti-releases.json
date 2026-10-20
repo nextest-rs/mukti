@@ -18,7 +18,8 @@
                   "checksums": {
                     "blake2b": "6b5eb2d3b52edd13e00d0f3c7f51f3ca8e59f8b26b5d3edd7efb49cb696a94dce4bf2a5027c9e88d02760d673eac7067e04fc4c2f3fd1e0fd180a941840756c1",
                     "sha256": "c5ee772b5dc421abbc7b0468d6d8c71b8b076f5c96d7ba7c5d780083f51d0ad4"
-                  }
+                  },
+                  "min_glibc": "2.17"
                 },
                 {
                   "target": "x86_64-pc-windows-msvc",
@@ -57,7 +58,8 @@
                   "checksums": {
                     "blake2b": "4bc9ca6ea840cd6335ec7a5132a960f18e2e6450f68fbf3151ec10601b88f188cd6202195c6e161ce1b22e9506955b60cf8ca9d894dc86e2b2f700f2070f301b",
                     "sha256": "28befb874c236ffc974db1ccf5b6cde0ec7bb907cd35d77565afebcd60f71da3"
-                  }
+                  },
+                  "min_glibc": "2.17"
                 },
                 {
                   "target": "x86_64-pc-windows-msvc",
@@ -90,7 +92,8 @@
                   "checksums": {
                     "blake2b": "de453f78991d2bf10c1de14c2dddaeba8ea7e9ccf5f682784697fcc1167b9ace7df13dfa7cb288496f7896e6f9fc5acb782787cd382129761be0dc47971d2960",
                     "sha256": "64b5e7cb4cddee9cf49b0f5b178b3f7abe45b9d7909125d45a6bdbf005df55b5"
-                  }
+                  },
+                  "min_glibc": "2.17"
                 },
                 {
                   "target": "x86_64-pc-windows-msvc",
@@ -122,7 +125,8 @@
                   "url": "https://github.com/nextest-rs/mukti/releases/download/mukti-bin-0.5.1/mukti-bin-0.5.1-x86_64-unknown-linux-gnu.tar.gz",
                   "checksums": {
                     "sha256": "57ad1a62e3ed67dc2a8c8affe3911c48ddd8b1b5597706d99b32edab5bc6386f"
-                  }
+                  },
+                  "min_glibc": "2.17"
                 },
                 {
                   "target": "x86_64-pc-windows-msvc",
