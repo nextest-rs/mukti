@@ -205,8 +205,8 @@ pub(crate) struct Checksums {
 impl Checksums {
     pub(crate) fn to_checksum_map(&self) -> BTreeMap<DigestAlgorithm, Digest> {
         [
-            (DigestAlgorithm::SHA256, Digest(hex::encode(self.sha256))),
-            (DigestAlgorithm::BLAKE2B, Digest(hex::encode(self.blake2b))),
+            (DigestAlgorithm::SHA256, Digest::new(self.sha256.to_vec())),
+            (DigestAlgorithm::BLAKE2B, Digest::new(self.blake2b.to_vec())),
         ]
         .into_iter()
         .collect()

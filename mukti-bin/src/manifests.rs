@@ -21,6 +21,8 @@ pub(crate) const MANIFEST_HEADER: &str = "mukti-install-manifest";
 /// Bump the number on any change that existing install scripts cannot read.
 pub(crate) const MANIFEST_FORMAT_VERSION: u32 = 1;
 
+const SHA256_LEN: usize = 32;
+
 /// The name of the directory a spec's manifest is written to.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 struct ManifestDirName(String);
@@ -116,26 +118,23 @@ fn render_manifest(project_name: &str, resolved: &ResolvedSpec<'_>) -> Result<St
                 location.format,
             );
         };
-        let sha256 = sha256.0.as_str();
 
         check_field("target", &location.target)?;
         check_field("format", &location.format)?;
         check_field("URL", &location.url)?;
-        if sha256.len() != 64 || !sha256.bytes().all(|b| b.is_ascii_hexdigit()) {
+        if sha256.as_bytes().len() != SHA256_LEN {
             bail!(
-                "sha256 checksum `{sha256}` for {}.{} is not 64 hex characters",
+                "sha256 checksum `{sha256}` for {}.{} is {} bytes long, not {SHA256_LEN}",
                 location.target,
                 location.format,
+                sha256.as_bytes().len(),
             );
         }
 
         writeln!(
             out,
             "archive {} {} {} {}",
-            location.target,
-            location.format,
-            sha256.to_ascii_lowercase(),
-            location.url,
+            location.target, location.format, sha256, location.url,
         )?;
     }
 
@@ -508,15 +507,16 @@ mod tests {
     #[test]
     fn malformed_sha256_is_rejected() {
         let mut json = fixture_json();
-        first_location(&mut json)
-            .checksums
-            .insert(DigestAlgorithm::SHA256, Digest("abc123".to_owned()));
+        first_location(&mut json).checksums.insert(
+            DigestAlgorithm::SHA256,
+            Digest::new_static(&[0xab, 0xc1, 0x23]),
+        );
         let temp_dir = temp_out_dir();
         let error =
             generate_install_manifests(&json, temp_dir.path()).expect_err("bad sha256 rejected");
         let message = format!("{error:#}");
         assert!(
-            message.contains("for version 0.5.3") && message.contains("not 64 hex characters"),
+            message.contains("for version 0.5.3") && message.contains("is 3 bytes long, not 32"),
             "error: {message}",
         );
     }

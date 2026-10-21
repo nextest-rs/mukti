@@ -10,6 +10,8 @@
 
 - Parsing and deserializing a `VersionRange` now only accepts the form that `Display` writes. Components with leading zeros or a leading plus sign, such as `0.05` and `+1`, used to parse to the same range as `0.5` and `1`; they are now errors.
 - **Breaking:** `VersionRangeParseError::error` is now a `VersionRangeComponentError` rather than a `ParseIntError`.
+- **Breaking:** `Digest` is now a newtype over a `Cow<'static, HexSlice>` (from [byte-wrapper](https://docs.rs/byte-wrapper)) rather than a `String`. Digests are still written as lowercase hex strings, but deserializing a digest that isn't valid hex is now an error. As part of this change, equality comparisons now use the underlying bytes directly, ignoring hex digit case.
+- The minimum supported Rust version is now 1.88.
 
 ## [0.3.0] - 2024-11-24
 
