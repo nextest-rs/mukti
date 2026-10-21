@@ -14,10 +14,9 @@ use color_eyre::{eyre::bail, Result};
 use semver::Version;
 use std::str::FromStr;
 
-#[doc(hidden)]
 #[derive(Debug, Parser)]
 #[clap(version)]
-pub struct MuktiApp {
+pub(crate) struct MuktiApp {
     #[clap(subcommand)]
     command: MuktiCommand,
 
@@ -84,7 +83,7 @@ enum MuktiCommand {
 }
 
 impl MuktiApp {
-    pub async fn exec(self) -> Result<()> {
+    pub(crate) async fn exec(self) -> Result<()> {
         match self.command {
             MuktiCommand::AddRelease {
                 release_url,

@@ -11,4 +11,14 @@ mod redirects;
 mod release_json;
 mod specs;
 
-pub use command::MuktiApp;
+use clap::Parser;
+use color_eyre::Result;
+use command::MuktiApp;
+
+#[doc(hidden)]
+#[tokio::main]
+pub async fn main_impl() -> Result<()> {
+    color_eyre::install()?;
+    let app = MuktiApp::parse();
+    app.exec().await
+}
