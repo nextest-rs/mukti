@@ -66,11 +66,10 @@ enum MuktiCommand {
         /// Output directory.
         out_dir: Utf8PathBuf,
     },
-    #[clap(about = "Generate per-version install manifests from the release JSON")]
+    /// Generate per-version install manifests from the release JSON.
     GenerateInstallManifests {
-        #[clap(
-            help = "Output directory: manifests go to <OUT_DIR>/<VERSION>/install-manifest.txt"
-        )]
+        /// Output directory: manifests go to
+        /// <OUT_DIR>/<VERSION>/install-manifest.txt.
         out_dir: Utf8PathBuf,
     },
     /// Add missing checksums and glibc floors to the release JSON
