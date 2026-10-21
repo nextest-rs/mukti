@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT or Apache-2.0
 
 use crate::{VersionRangeComponentError, VersionRangeParseError};
+use byte_wrapper::{HexSlice, HexVec};
 use semver::{Version, VersionReq};
 use serde::{de::Visitor, ser::SerializeMap, Deserialize, Serialize, Serializer};
 use std::{borrow::Cow, collections::BTreeMap, fmt, str::FromStr};
@@ -148,10 +149,39 @@ impl DigestAlgorithm {
     }
 }
 
-/// A digest, typically encoded as a hex string.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+/// A digest, encoded as a hex string.
+#[derive(Clone, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(transparent)]
-pub struct Digest(pub String);
+pub struct Digest(pub Cow<'static, HexSlice>);
+
+impl Digest {
+    pub const fn new_static(bytes: &'static [u8]) -> Self {
+        Self(Cow::Borrowed(HexSlice::new(bytes)))
+    }
+
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Self(Cow::Owned(HexVec::new(bytes)))
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+}
+
+impl fmt::Display for Digest {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(&*self.0, f)
+    }
+}
+
+// The Debug impl for Digest isn't derived because a derived version would print
+// `HexSlice` or `HexVec` depending on the Cow variant, which is an internal
+// detail that's definitely not worth exposing to users.
+impl fmt::Debug for Digest {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_tuple("Digest").field(&self.to_string()).finish()
+    }
+}
 
 fn serialize_reverse<S, K, V>(map: &BTreeMap<K, V>, serializer: S) -> Result<S::Ok, S::Error>
 where
@@ -406,6 +436,28 @@ mod tests {
         let range = project.ranges.get_mut(&range_0_5).unwrap();
         range.versions.get_mut(&version("0.5.1")).unwrap().status = ReleaseStatus::Yanked;
         assert_eq!(latest(project), None, "every stable version is yanked");
+    }
+
+    #[test]
+    fn test_digest_serde() {
+        let digest: Digest = serde_json::from_str(r#""0aFF""#).expect("mixed-case hex parses");
+        assert_eq!(digest, Digest::new_static(&[0x0a, 0xff]));
+        assert_eq!(digest.as_bytes(), &[0x0a, 0xff]);
+        assert_eq!(digest.to_string(), "0aff");
+        assert_eq!(
+            serde_json::to_string(&digest).expect("digest serialized"),
+            r#""0aff""#,
+        );
+
+        let owned = Digest::new(vec![0x0a, 0xff]);
+        let borrowed = Digest::new_static(&[0x0a, 0xff]);
+        assert_eq!(format!("{owned:?}"), r#"Digest("0aff")"#);
+        assert_eq!(format!("{borrowed:?}"), r#"Digest("0aff")"#);
+
+        for input in [r#""0g""#, r#""abc""#, r#""Not Found""#] {
+            serde_json::from_str::<Digest>(input)
+                .expect_err("a digest that isn't valid hex is rejected");
+        }
     }
 
     #[test]

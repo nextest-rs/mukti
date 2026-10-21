@@ -195,12 +195,15 @@ fn name_value_parse(input: &str, delimiter: char) -> Result<(String, String), Na
 mod tests {
     use super::*;
     use camino::Utf8Path;
+    use hex_literal::hex;
     use httptest::{matchers::request, responders::status_code, Expectation, Server};
-    use mukti_metadata::{DigestAlgorithm, MuktiReleasesJson};
+    use mukti_metadata::{Digest, DigestAlgorithm, MuktiReleasesJson};
 
     static FIXTURE_JSON: &str = include_str!("../../fixtures/mukti-releases.json");
     const ARCHIVE_BODY: &str = "hello";
-    const ARCHIVE_SHA256: &str = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824";
+    const ARCHIVE_SHA256: Digest = Digest::new_static(&hex!(
+        "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+    ));
     const LINUX_ARCHIVE: &str = "mukti-bin-0.5.4-x86_64-unknown-linux-musl.tar.gz";
     const WINDOWS_ARCHIVE: &str = "mukti-bin-0.5.4-x86_64-pc-windows-msvc.zip";
 
@@ -257,7 +260,7 @@ mod tests {
             .map(|location| {
                 (
                     location.url.clone(),
-                    location.checksums[&DigestAlgorithm::SHA256].0.as_str(),
+                    location.checksums[&DigestAlgorithm::SHA256].clone(),
                 )
             })
             .collect();

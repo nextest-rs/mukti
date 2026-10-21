@@ -7,10 +7,11 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/nextest-rs/mukti"
 documentation = "https://docs.rs/mukti-metadata"
 keywords = ["mukti"]
-rust-version = "1.59"
+rust-version = "1.88"
 readme = "README.md"
 
 [dependencies]
+byte-wrapper = { version = "0.2.1", default-features = false, features = ["alloc", "hex", "serde"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1"
 semver = { version = "1.0.28", features = ["serde"] }
