@@ -28,7 +28,7 @@ byte-wrapper = { version = "0.2.1", default-features = false, features = ["alloc
 camino = "1.2.6"
 color-eyre = { version = "0.6.5", default-features = false }
 mukti-bin = { path = "../mukti-bin" }
-sha2 = "0.10.9"
+sha2 = "0.11.1"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_System_Console", "Win32_System_Threading"] }
