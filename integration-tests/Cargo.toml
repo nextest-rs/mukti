@@ -43,7 +43,7 @@ mukti-metadata = { path = "../mukti-metadata" }
 rcgen = { version = "0.14.10", default-features = false, features = ["aws_lc_rs", "pem"] }
 rustls = { version = "0.23.45", default-features = false, features = ["aws-lc-rs", "std", "tls12"] }
 semver = "1.0.28"
-serde_json = "1.0.151"
+serde_json = "1.0.154"
 tar = { version = "0.4.46", default-features = false }
 tokio = { version = "1", features = ["io-util", "macros", "net", "rt-multi-thread", "time"] }
 tokio-rustls = { version = "0.26.0", default-features = false, features = ["aws-lc-rs", "tls12"] }
