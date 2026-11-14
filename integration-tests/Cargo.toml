@@ -36,7 +36,7 @@ windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Syste
 [dev-dependencies]
 camino-tempfile = "1.4.1"
 eazip = { version = "0.2.8", default-features = false, features = ["std"] }
-flate2 = "1.1.9"
+flate2 = "1.1.11"
 httptest = "0.16.4"
 libtest-mimic = "0.8.2"
 mukti-metadata = { path = "../mukti-metadata" }
