@@ -6,6 +6,7 @@
 mod archive;
 mod bare_tcp;
 mod cases;
+mod color;
 #[cfg(unix)]
 mod fake_tools;
 mod fixture;

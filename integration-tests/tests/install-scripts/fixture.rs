@@ -87,7 +87,7 @@ pub(crate) const CALLER_INTACT: &str = "caller state intact";
 ///
 /// All other environment variables are cleared so that things like the
 /// developer's proxy settings and rc file cannot influence the test.
-const PASSED_THROUGH_VARS: &[&str] = &[
+pub(crate) const PASSED_THROUGH_VARS: &[&str] = &[
     "PATH",
     "SystemRoot",
     "SystemDrive",
@@ -1565,7 +1565,7 @@ impl Fixture {
                      irm '{script_url}' | iex; \
                      if (\"$Version $InstallDir $Target $BaseUrl\" -cne 'caller caller caller caller') {{ throw 'install.ps1 changed the variables of its caller' }}; \
                      if (\"$args\" -cne '-Version 9.9.9 stray') {{ throw 'install.ps1 changed the arguments of its caller' }}; \
-                     if ((Test-Path Function:\\Write-Info) -or (Test-Path Function:\\Get-Url)) {{ throw 'install.ps1 left functions defined' }}; \
+                     if ((Test-Path Function:\\Write-Info) -or (Test-Path Function:\\Get-Url) -or (Test-Path Function:\\Test-ColorWanted)) {{ throw 'install.ps1 left functions defined' }}; \
                      if (\"$ErrorActionPreference\" -cne 'Continue') {{ throw 'install.ps1 changed the error preference of its caller' }}; \
                      '{CALLER_INTACT}' \
                      }} -Version 9.9.9 stray"

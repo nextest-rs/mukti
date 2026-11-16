@@ -91,10 +91,77 @@ try {
             $BaseUrl = $env:@ENV_PREFIX@_BASE_URL
         }
 
+        # This matches nextest:
+        #
+        # * CARGO_TERM_COLOR
+        # * supports-color 3 logic with Windows TERM rules, minus is_ci
+        function Test-ColorWanted {
+            $mode = [Environment]::GetEnvironmentVariable('CARGO_TERM_COLOR')
+            if ($null -eq $mode) {
+                $mode = 'auto'
+            }
+            if (@('auto', 'always', 'never') -cnotcontains $mode) {
+                throw "invalid CARGO_TERM_COLOR: `"$mode`"`nexpected `"auto`", `"always`", or `"never`"; unset CARGO_TERM_COLOR to use the default"
+            }
+            # With Windows PowerShell 5.1, we don't produce color output, since
+            # its console may not process ANSI escapes.
+            if ($PSVersionTable.PSEdition -ne 'Core') {
+                return $false
+            }
+            if ($mode -ceq 'always') {
+                return $true
+            }
+            if ($mode -ceq 'never') {
+                return $false
+            }
+
+            $forceColor = [Environment]::GetEnvironmentVariable('FORCE_COLOR')
+            $clicolorForce = [Environment]::GetEnvironmentVariable('CLICOLOR_FORCE')
+            # FORCE_COLOR, if set, overrides CLICOLOR_FORCE even when it does
+            # not force color.
+            $forced = if ($null -ne $forceColor) {
+                # supports-color parses FORCE_COLOR as a usize:
+                #
+                # * "false" and zero don't force color on
+                # * "", "true", and anything else unparseable or nonzero do.
+                $forceColor -cne 'false' -and $forceColor -cnotmatch '^\+?0+\z'
+            }
+            else {
+                $null -ne $clicolorForce -and $clicolorForce -cne '0'
+            }
+            if ($forced) {
+                return $true
+            }
+
+            $noColor = [Environment]::GetEnvironmentVariable('NO_COLOR')
+            $term = [Environment]::GetEnvironmentVariable('TERM')
+            if (($null -ne $noColor -and $noColor -cne '0') -or $term -ceq 'dumb') {
+                return $false
+            }
+            $ignoreIsTerminal = [Environment]::GetEnvironmentVariable('IGNORE_IS_TERMINAL')
+            if ([Console]::IsOutputRedirected -and ($null -eq $ignoreIsTerminal -or $ignoreIsTerminal -ceq '0')) {
+                return $false
+            }
+            $termProgram = [Environment]::GetEnvironmentVariable('TERM_PROGRAM')
+            $clicolor = [Environment]::GetEnvironmentVariable('CLICOLOR')
+            return ($null -ne [Environment]::GetEnvironmentVariable('COLORTERM')) -or
+                ($term -cne 'cygwin') -or
+                ($termProgram -ceq 'iTerm.app') -or ($termProgram -ceq 'Apple_Terminal') -or
+                ($null -ne $clicolor -and $clicolor -cne '0')
+        }
+        $infoPrefix = 'info:'
+        $emphasis = ''
+        $reset = ''
+        if (Test-ColorWanted) {
+            $infoPrefix = "$([char]27)[1minfo:$([char]27)[0m"
+            $emphasis = "$([char]27)[1m"
+            $reset = "$([char]27)[0m"
+        }
+
         function Write-Info {
             param([string]$Message)
 
-            Write-Information -MessageData "info: $Message" -InformationAction Continue
+            Write-Information -MessageData "$infoPrefix $Message" -InformationAction Continue
         }
 
         # Returns 'ok' or 'not-found', and throws on any other failure.
@@ -441,7 +508,7 @@ try {
                 throw "the install manifest at $manifestUrl has an archive URL for target $chosenTarget that is not an https URL: `"$archiveUrl`""
             }
 
-            Write-Info "installing $project $manifestVersion ($chosenTarget) to $InstallDir"
+            Write-Info "installing $emphasis$project $manifestVersion$reset ($chosenTarget) to $emphasis$InstallDir$reset"
             Write-Info "downloading $archiveUrl"
             $archivePath = Join-Path $tmpDir "archive.$archiveFormat"
             if ((Get-Url -Url $archiveUrl -OutFile $archivePath) -ne 'ok') {
@@ -595,10 +662,10 @@ try {
                 }
             }
 
-            Write-Info "installed $project $manifestVersion to $dest"
+            Write-Info "installed $emphasis$project $manifestVersion$reset to $emphasis$dest$reset"
             $pathDirs = @("$env:PATH".Split([IO.Path]::PathSeparator) | ForEach-Object { $_.TrimEnd('\', '/') })
             if ($pathDirs -notcontains $InstallDir.TrimEnd('\', '/')) {
-                Write-Info "$InstallDir is not in your PATH; add it to run $binName"
+                Write-Info "$emphasis$InstallDir$reset is not in your PATH; add it to run $binName"
             }
         }
         finally {
