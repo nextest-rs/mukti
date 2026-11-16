@@ -31,21 +31,90 @@ MANIFEST_FORMAT='@MANIFEST_FORMAT@'
 MANIFEST_FILE_NAME='@MANIFEST_FILE_NAME@'
 ARCHIVE_FORMAT=tar.gz
 
+# These variables are empty until resolve_color turns color on.
+color_error=
+color_warning=
+color_info=
+color_emphasis=
+color_reset=
+
 info() {
-    printf 'info: %s\n' "$*" >&2
+    printf '%sinfo:%s %s\n' "$color_info" "$color_reset" "$*" >&2
 }
 
 warn() {
-    printf 'warning: %s\n' "$*" >&2
+    printf '%swarning:%s %s\n' "$color_warning" "$color_reset" "$*" >&2
 }
 
 die() {
-    printf 'error: %s\n' "$1" >&2
+    printf '%serror:%s %s\n' "$color_error" "$color_reset" "$1" >&2
     shift
     for die_line in "$@"; do
         printf '       %s\n' "$die_line" >&2
     done
     exit 1
+}
+
+# This matches nextest:
+#
+# * CARGO_TERM_COLOR
+# * supports-color 3 logic, minus is_ci
+resolve_color() {
+    case "${CARGO_TERM_COLOR-auto}" in
+        always) color_wanted=yes ;;
+        never) color_wanted=no ;;
+        auto) resolve_color_auto ;;
+        *)
+            die "invalid CARGO_TERM_COLOR: \"$CARGO_TERM_COLOR\"" \
+                "expected \"auto\", \"always\", or \"never\"; unset CARGO_TERM_COLOR to use the default"
+            ;;
+    esac
+    if [ "$color_wanted" = yes ]; then
+        color_escape=$(printf '\033')
+        color_error="${color_escape}[1;31m"
+        color_warning="${color_escape}[1;33m"
+        color_info="${color_escape}[1m"
+        color_emphasis="${color_escape}[1m"
+        color_reset="${color_escape}[0m"
+    fi
+}
+
+# A port of supports_color::on(Stream::Stderr) from supports-color 3.0.2, minus
+# the is_ci check.
+resolve_color_auto() {
+    color_wanted=yes
+    if [ -n "${FORCE_COLOR+set}" ]; then
+        # FORCE_COLOR, if set, overrides CLICOLOR_FORCE even when it does
+        # not force color.
+        #
+        # supports-color parses FORCE_COLOR as a usize:
+        #
+        # * "false" and zero don't force color on
+        # * "", "true", and anything else unparseable or nonzero do.
+        case "$FORCE_COLOR" in
+            false) ;;
+            *)
+                case "${FORCE_COLOR#+}" in
+                    '' | *[!0]*) return 0 ;;
+                esac
+                ;;
+        esac
+    elif [ -n "${CLICOLOR_FORCE+set}" ] && [ "$CLICOLOR_FORCE" != 0 ]; then
+        return 0
+    fi
+
+    # bash sets TERM=dumb when TERM is unset.
+    if { [ -n "${NO_COLOR+set}" ] && [ "$NO_COLOR" != 0 ]; } || [ "${TERM-}" = dumb ]; then
+        color_wanted=no
+    elif ! [ -t 2 ] && { [ -z "${IGNORE_IS_TERMINAL+set}" ] || [ "$IGNORE_IS_TERMINAL" = 0 ]; }; then
+        color_wanted=no
+    elif [ -n "${COLORTERM+set}" ] || [ -n "${TERM+set}" ] ||
+        [ "${TERM_PROGRAM-}" = iTerm.app ] || [ "${TERM_PROGRAM-}" = Apple_Terminal ] ||
+        { [ -n "${CLICOLOR+set}" ] && [ "$CLICOLOR" != 0 ]; }; then
+        color_wanted=yes
+    else
+        color_wanted=no
+    fi
 }
 
 usage() {
@@ -535,7 +604,7 @@ read_manifest() {
     case "$rm_status" in
         active) ;;
         yanked)
-            warn "$PROJECT $m_version has been yanked; installing it anyway since it was requested"
+            warn "$color_emphasis$PROJECT $m_version$color_reset has been yanked; installing it anyway since it was requested"
             ;;
         *)
             die "the install manifest at $2 has an unknown release status: \"$rm_status\"" \
@@ -606,6 +675,7 @@ cleanup() {
 }
 
 main() {
+    resolve_color
     parse_args "$@"
     # From here on, the positional parameters are the arguments for the
     # post-install command -- empty means there is no post-install step.
@@ -672,7 +742,7 @@ main() {
     if [ -n "$host_note" ]; then
         info "$host_note"
     fi
-    info "installing $PROJECT $m_version ($target) to $install_dir"
+    info "installing $color_emphasis$PROJECT $m_version$color_reset ($target) to $color_emphasis$install_dir$color_reset"
     info "downloading $m_url"
     http_get "$m_url" "$tmp_dir/archive.$ARCHIVE_FORMAT"
     case "$http_result" in
@@ -749,11 +819,11 @@ main() {
         esac
     fi
 
-    info "installed $PROJECT $m_version to $dest"
+    info "installed $color_emphasis$PROJECT $m_version$color_reset to $color_emphasis$dest$color_reset"
     case ":${PATH:-}:" in
         *":$install_dir:"*) ;;
         *)
-            info "$install_dir is not in your PATH; add it to run $BIN_NAME"
+            info "$color_emphasis$install_dir$color_reset is not in your PATH; add it to run $BIN_NAME"
             ;;
     esac
 }

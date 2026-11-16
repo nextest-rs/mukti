@@ -9,6 +9,7 @@ use crate::{
         common_cases, Case, Existing, ExpectedAfterManifest, ExpectedResult, ExpectedTarget,
         PostInstall,
     },
+    color::{powershell_color_cases, run_color_case, sh_color_cases},
     fixture::{
         dir_entry_names, real_default_binaries, CheckedRun, DefaultBaseUrl, Fixture, Invocation,
         Outcome, PostInstallStep, ServedArchive, BIN_NAME, CALLER_INTACT, OLD_BINARY,
@@ -16,9 +17,9 @@ use crate::{
     },
     host::sh_host_target,
     shells::{
-        Launch, LocatedShell, PowerShellMode, PowerShellName, PowerShellPlatform, Requirement,
-        Requirements, ShMode, ShName, ShPlatform, ShellKind, ShellLaunch, ShellName, REQUIRE_VAR,
-        SHELLS,
+        Launch, LocatedShell, PowerShellMode, PowerShellName, PowerShellPlatform, PowerShellRun,
+        Requirement, Requirements, ShMode, ShName, ShPlatform, ShRun, ShellKind, ShellLaunch,
+        ShellName, REQUIRE_VAR, SHELLS,
     },
     standalone::{
         bad_values_are_rejected, https_redirect_to_http, powershell_interrupt_cleans_up,
@@ -30,7 +31,6 @@ use crate::{
 #[cfg(unix)]
 use crate::{
     fixture::HomeVars,
-    shells::ShRun,
     standalone::{sh_signal_cleans_up, Signal},
 };
 #[cfg(windows)]
@@ -69,7 +69,7 @@ impl ShellLaunch {
         }
     }
 
-    fn host_target(self) -> Result<Target> {
+    pub(crate) fn host_target(self) -> Result<Target> {
         match self {
             Self::Sh(_, run) => match run.platform {
                 ShPlatform::Host => sh_host_target(),
@@ -199,6 +199,14 @@ pub(crate) fn trials() -> Result<Vec<Trial>> {
                 ] {
                     trials.push(shell_trial(sh, &shell_path, name, test));
                 }
+                for case in sh_color_cases() {
+                    let shell_path = shell_path.clone();
+                    let launch = ShellLaunch::Sh(sh, ShRun::DEFAULT);
+                    trials.push(Trial::test(
+                        format!("{sh}::color::{}", case.name),
+                        move || run_color_case(&shell_path, launch, case).map_err(failed),
+                    ));
+                }
                 #[cfg(unix)]
                 for signal in Signal::ALL {
                     let shell_path = shell_path.clone();
@@ -234,6 +242,14 @@ pub(crate) fn trials() -> Result<Vec<Trial>> {
                     ("removes-old-backups", powershell_removes_old_backups),
                 ] {
                     trials.push(shell_trial(powershell, &shell_path, name, test));
+                }
+                for case in powershell_color_cases(powershell) {
+                    let shell_path = shell_path.clone();
+                    let launch = ShellLaunch::PowerShell(powershell, PowerShellRun::DEFAULT);
+                    trials.push(Trial::test(
+                        format!("{powershell}::color::{}", case.name),
+                        move || run_color_case(&shell_path, launch, case).map_err(failed),
+                    ));
                 }
                 #[cfg(windows)]
                 trials.push(shell_trial(
