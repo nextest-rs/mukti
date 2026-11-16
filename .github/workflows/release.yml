@@ -46,6 +46,7 @@ jobs:
       - uses: taiki-e/create-gh-release-action@045e5c0ed9c50cc1f96de7e891a09ad3daea245f # v1
         with:
           prefix: mukti-bin
+          changelog: mukti-bin/CHANGELOG.md
           title: $prefix $version
           branch: main
         env:
