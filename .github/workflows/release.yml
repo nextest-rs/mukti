@@ -115,13 +115,26 @@ jobs:
       - create-mukti-bin-release
       - upload-mukti-bin-assets
     runs-on: ubuntu-latest
+    environment: release-meta
+    permissions: {}
     steps:
+      - name: Mint release-meta token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        id: release-meta-token
+        with:
+          client-id: ${{ vars.RELEASE_META_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_META_APP_PRIVATE_KEY }}
+          owner: nextest-rs
+          repositories: mukti-release-meta
+          permission-contents: write
       - name: Check out release-meta repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          # Credentials are needed for git push later in this job.
+          persist-credentials: true
           repository: nextest-rs/mukti-release-meta
           ref: main
-          token: ${{ secrets.RELEASE_META_DEPLOY_TOKEN }}
+          token: ${{ steps.release-meta-token.outputs.token }}
       - name: Add release to releases.json
         run: |
           ARCHIVE_PREFIX="https://github.com/nextest-rs/mukti/releases/download/${{ github.ref_name }}"
