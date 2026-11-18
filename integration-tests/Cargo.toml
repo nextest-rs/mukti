@@ -49,4 +49,4 @@ tokio = { version = "1", features = ["io-util", "macros", "net", "rt-multi-threa
 tokio-rustls = { version = "0.26.0", default-features = false, features = ["aws-lc-rs", "tls12"] }
 
 [target.'cfg(unix)'.dev-dependencies]
-libc = "0.2.190"
+libc = "0.2.191"
