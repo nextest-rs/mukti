@@ -46,7 +46,7 @@ semver = "1.0.28"
 serde_json = "1.0.151"
 tar = { version = "0.4.46", default-features = false }
 tokio = { version = "1", features = ["io-util", "macros", "net", "rt-multi-thread", "time"] }
-tokio-rustls = { version = "0.26.0", default-features = false, features = ["aws-lc-rs", "tls12"] }
+tokio-rustls = { version = "0.26.6", default-features = false, features = ["aws-lc-rs", "tls12"] }
 
 [target.'cfg(unix)'.dev-dependencies]
 libc = "0.2.191"
